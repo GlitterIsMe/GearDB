@@ -20,13 +20,13 @@ const long MemAlignSize = sysconf(
         _SC_PAGESIZE);  //The size of the alignment when applying for memory using posix_memalign
 const bool ReadWholeTable = true;   //1 means that the entire file is read together when reading the SSTable; 0 means that a block is read during the read operation.
 const bool FindTableOld = true; //1 means that when finding key-value, it is the same as the original, a block is read; 0 means that the search key-value is the same as the Read_Whole_Table parameter.
-
+const uint64_t ZONESIZE = 256ul * 1024 * 1024; //Size of a single zone
 
 
 namespace leveldb {
 
     struct Ldbfile {     //file = SSTable ,file Metadata struct
-        uint64_t table;  //file name = fiel serial number
+        uint64_t table;  //file name = file serial number
         uint64_t zone;   //file's zone number
         uint64_t offset; //file's offset in the zone
         uint64_t size;   //file's size
@@ -38,25 +38,21 @@ namespace leveldb {
         ~Ldbfile() {};
     };
 
-    struct Zonefile {    //zone struct
-        uint64_t zone; //zone num 
-        int fd;    //zone open file's fd  
-        uint64_t write_pointer; //zone's write_pointer, also offset
-
-        std::vector<struct Ldbfile *> ldb; //SSTable pointers
-        Zonefile(uint64_t a, int b, uint64_t c) : zone(a), fd(b), write_pointer(c) {};
+    class Zonefile {    //zone struct
+    public:
+        Zonefile(uint64_t a, int b, uint64_t c) : zone_(a), fd_(b), write_pointer_(c) {};
 
         ~Zonefile() {};
 
         void add_table(struct Ldbfile *file) {
-            ldb.push_back(file);
+            ldb_.push_back(file);
         }
 
-        void delete_table(struct Ldbfile *file) {
-            std::vector<struct Ldbfile *>::iterator it;
-            for (it = ldb.begin(); it != ldb.end();) {
+        void delete_table(Ldbfile *file) {
+            std::vector<Ldbfile *>::iterator it;
+            for (it = ldb_.begin(); it != ldb_.end();) {
                 if ((*it) == file) {
-                    ldb.erase(it);
+                    ldb_.erase(it);
                     return;
                 } else it++;
             }
@@ -64,12 +60,27 @@ namespace leveldb {
 
         uint64_t get_all_file_size() {
             uint64_t size = 0;
-            std::vector<struct Ldbfile *>::iterator it;
-            for (it = ldb.begin(); it != ldb.end(); it++) {
-                size += (*it)->size;
+            for(auto file : ldb_){
+                size += file->size;
             }
             return size;
         }
+
+        uint64_t zone() { return zone_; }
+
+        int fd() { return fd_; }
+
+        uint64_t write_pointer() { return write_pointer_; }
+
+        void forward_write_pointer(uint64_t offset) { write_pointer_ += offset; }
+
+        std::vector<Ldbfile *> &ldb() { return ldb_; }
+
+    private:
+        uint64_t zone_; //zone num
+        int fd_;    //zone open file's fd
+        uint64_t write_pointer_; //zone's write_pointer, also offset
+        std::vector<Ldbfile *> ldb_; //SSTable pointers
     };
 
 

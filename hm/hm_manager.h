@@ -55,7 +55,6 @@ namespace leveldb{
         void get_per_level_info();
         void get_valid_info();
         void get_all_info();
-        void get_valid_data();
         void get_my_info(int num);
         void get_valid_all_data(int num);
 
@@ -71,9 +70,9 @@ namespace leveldb{
 
         const InternalKeyComparator icmp_;
 
-        std::map<uint64_t, struct Ldbfile*> table_map_;  //<file number, metadate pointer>
-        std::vector<struct Zonefile*> zone_info_[config::kNumLevels];  //each level of zone
-        std::vector<struct Zonefile*> com_window_[config::kNumLevels]; //each level of compaction window
+        std::map<uint64_t, Ldbfile*> table_map_;  //<file number, metadate pointer>
+        std::vector<Zonefile*> zone_info_[config::kNumLevels];  //each level of zone
+        std::vector<Zonefile*> com_window_[config::kNumLevels]; //each level of compaction window
 
         //////statistics
         uint64_t delete_zone_num;
@@ -87,7 +86,7 @@ namespace leveldb{
         //////end
 
         void set_all_zonenum_and_first_zonenum(uint64_t *zonenum, uint64_t *first_zonenum);
-        ssize_t hm_alloc(int level,uint64_t size);
+        void hm_alloc(int level,uint64_t size);
         struct Zonefile* hm_alloc_zone();
         struct Zonefile* get_zone(uint64_t zone_id,int level);
         ssize_t hm_free_zone(uint64_t zone);
