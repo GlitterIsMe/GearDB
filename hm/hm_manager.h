@@ -10,6 +10,7 @@
 #include <cstring>
 #include <map>
 #include <vector>
+#include <string>
 #include <unistd.h>  
 
 #include "../db/dbformat.h"
@@ -22,7 +23,7 @@ namespace leveldb{
 
     class HMManager {
     public:
-        HMManager(const Comparator *icmp);
+        HMManager(const Comparator *icmp, std::string smr_disk);
         ~HMManager();
         
         ssize_t hm_write(int level,uint64_t filenum,const void *buf,uint64_t count);   //write a SSTable file to a level
@@ -65,6 +66,8 @@ namespace leveldb{
 
         uint64_t zonenum_;   //all zone numbers
         uint64_t first_zonenum_;   // the first seqwrite zone id
+
+        std::string smr_filename_;
 
         const InternalKeyComparator icmp_;
 

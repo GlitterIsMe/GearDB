@@ -16,8 +16,9 @@ namespace leveldb{
         return rand() % size;
     }
 
-    HMManager::HMManager(const Comparator *icmp)
-        :icmp_(icmp) {
+    HMManager::HMManager(const Comparator *icmp, std::string smr_disk)
+        :icmp_(icmp),
+        smr_filename_(std::move(smr_disk)){
         
         set_all_zonenum_and_first_zonenum(&zonenum_, &first_zonenum_);
         
@@ -75,7 +76,7 @@ namespace leveldb{
         for(i = first_zonenum_;i < zonenum_; i++){  //Traverse from the first sequential write zone
             if(bitmap_->get(i) == 0){
                 char filenamebuf[100];
-                snprintf(filenamebuf,sizeof(filenamebuf),"%s/%d",smr_filename,i);
+                snprintf(filenamebuf,sizeof(filenamebuf),"%s/%d",smr_filename_.c_str(),i);
                 int fd = open(filenamebuf, O_RDWR | O_DIRECT | O_TRUNC);  //need O_TRUNC to set write_pointer = 0
                 if(fd == -1){
                     MyLog("error:open failed! path:%s\n",filenamebuf);

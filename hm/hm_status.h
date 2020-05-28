@@ -25,8 +25,6 @@ const bool FindTableOld = true; //1 means that when finding key-value, it is the
 
 namespace leveldb {
 
-    static const char smr_filename[] = "/mnt/seqwrite";   //e.g. smr_filename[]="/mnt/seqwrite"; mount smr seqwrite dir
-
     struct Ldbfile {     //file = SSTable ,file Metadata struct
         uint64_t table;  //file name = fiel serial number
         uint64_t zone;   //file's zone number
