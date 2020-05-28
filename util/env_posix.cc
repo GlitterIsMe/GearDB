@@ -29,7 +29,6 @@
 #include "leveldb/options.h"
 
 #include "../hm/hm_manager.h"
-#include "../hm/get_manager.h"
 
 namespace leveldb {
 
@@ -627,21 +626,6 @@ class PosixEnv : public Env {
                                      RandomAccessFile** result,int flag = 0,const char *buf_file = NULL) {
     *result = NULL;
     Status s;
-    if(isSSTableName(fname)){
-      if(flag && FindTableOld){
-        *result = new HMRamdomAccessFile(fname, Singleton::Gethmmanager());
-        return Status::OK();
-      }
-      
-      if(ReadWholeTable){
-        *result = new HMComRamdomAccessFile(fname, Singleton::Gethmmanager(),buf_file);
-        return Status::OK();
-      }
-      else{
-        *result = new HMRamdomAccessFile(fname, Singleton::Gethmmanager());
-        return Status::OK();
-      }
-    }
     int fd = open(fname.c_str(), O_RDONLY);
     if (fd < 0) {
       s = PosixError(fname, errno);
@@ -670,17 +654,6 @@ class PosixEnv : public Env {
                                  WritableFile** result,
                                  int level = -1) {
     Status s;
-    if(isSSTableName(fname)){
-        if(level == 0){
-          *result = new HMWritableFileL0(fname, Singleton::Gethmmanager(),level);
-          return Status::OK();
-        }
-        else {
-          *result = new HMWritableFile(fname, Singleton::Gethmmanager(),level);
-          return Status::OK();
-        }
-        
-    }
     int fd = open(fname.c_str(), O_TRUNC | O_WRONLY | O_CREAT, 0644);
     if (fd < 0) {
       *result = NULL;
@@ -725,11 +698,6 @@ class PosixEnv : public Env {
 
   virtual Status DeleteFile(const std::string& fname) {
     Status result;
-    HMManager *hmmanager=Singleton::Gethmmanager();
-    if(isSSTableName(fname)){
-      hmmanager->hm_delete(Parsefname(fname));
-      return Status::OK();
-    }
     if (unlink(fname.c_str()) != 0) {
       result = PosixError(fname, errno);
     }

@@ -1491,7 +1491,7 @@ Compaction::Compaction(const Options* options, int level)
       grandparent_index_(0),
       seen_key_(false),
       overlapped_bytes_(0),
-      hm_manager_(Singleton::Gethmmanager()),
+      hm_manager_(options->hm_manager),
       current_level(level+1){
       dump_grandparents=0;
       

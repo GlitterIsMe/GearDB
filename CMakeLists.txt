@@ -187,13 +187,13 @@ target_sources(geardb
         "hm/BitMap.h"
         "hm/container.cc"
         "hm/container.h"
-        "hm/get_manager.cc"
-        "hm/get_manager.h"
         "hm/hm_manager.cc"
         "hm/hm_manager.h"
         "hm/hm_status.h"
         "hm/my_log.cc"
         "hm/my_log.h"
+        "hm/env_hm.cc"
+        "hm/env_hm.h"
         )
 
 #target_sources(geardb

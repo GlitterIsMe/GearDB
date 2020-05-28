@@ -33,7 +33,6 @@
 #include "util/logging.h"
 #include "util/mutexlock.h"
 
-#include "../hm/get_manager.h"
 #include "../hm/container.h"
 
 namespace leveldb {
@@ -147,7 +146,7 @@ DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
       tmp_batch_(new WriteBatch),
       bg_compaction_scheduled_(false),
       manual_compaction_(NULL),
-      hm_manager_(Singleton::Gethmmanager()) {
+      hm_manager_(raw_options.hm_manager) {
   has_imm_.Release_Store(NULL);
 //////
   log_write_time_ = 0;

@@ -16,6 +16,7 @@ class Env;
 class FilterPolicy;
 class Logger;
 class Snapshot;
+class HMManager;
 
 // DB contents are stored in a set of blocks, each of which holds a
 // sequence of key,value pairs.  Each block may be compressed before
@@ -153,6 +154,8 @@ struct LEVELDB_EXPORT Options {
   //
   // Default: NULL
   const FilterPolicy* filter_policy;
+
+  HMManager* hm_manager;
 
   // Create an Options object with default values for all fields.
   Options();
