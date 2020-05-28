@@ -25,7 +25,7 @@ namespace leveldb{
 
         init_log_file();
         MyLog("\n  !!geardb!!  \n");
-        MyLog("COM_WINDOW_SEQ:%d Verify_Table:%d Read_Whole_Table:%d Find_Table_Old:%d\n",COM_WINDOW_SEQ,Verify_Table,Read_Whole_Table,Find_Table_Old);
+        MyLog("COM_WINDOW_SEQ:%d Verify_Table:%d Read_Whole_Table:%d Find_Table_Old:%d\n",CompactionWindowSeq, Verify_Table, ReadWholeTable, FindTableOld);
         MyLog("the first_zonenum_:%d zone_num:%ld\n",first_zonenum_,zonenum_);
         //////statistics
         delete_zone_num=0;
@@ -99,7 +99,7 @@ namespace leveldb{
     }
 
     ssize_t HMManager::hm_alloc(int level,uint64_t size){
-        uint64_t need_size=(size%PHYSICAL_DISK_SIZE)? (size/PHYSICAL_DISK_SIZE+1)*PHYSICAL_DISK_SIZE : size;
+        uint64_t need_size=(size % PhysicalDiskSize)? (size / PhysicalDiskSize + 1) * PhysicalDiskSize : size;
         uint64_t write_zone=0;
         if(zone_info_[level].empty()){
             struct Zonefile* zf = hm_alloc_zone();
@@ -135,21 +135,21 @@ namespace leveldb{
     ssize_t HMManager::hm_write(int level,uint64_t filenum,const void *buf,uint64_t count){
         
         hm_alloc(level,count);
-        void *w_buf=NULL;
+        void *w_buf = nullptr;
         struct Zonefile* zf = zone_info_[level][zone_info_[level].size()-1];
         uint64_t write_size;
         uint64_t write_ofst=zf->write_pointer;
         ssize_t ret;
 
         uint64_t write_time_begin=get_now_micros();
-        if(count%PHYSICAL_DISK_SIZE==0){
+        if(count % PhysicalDiskSize == 0){
             write_size=count;
             ret=pwrite(zf->fd, buf, write_size, write_ofst);
         }
         else{
-            write_size=(count/PHYSICAL_DISK_SIZE+1)*PHYSICAL_DISK_SIZE;  //Align with physical block
+            write_size=(count / PhysicalDiskSize + 1) * PhysicalDiskSize;  //Align with physical block
             //w_buf=(void *)malloc(sector_count*512);
-            ret=posix_memalign(&w_buf,MEMALIGN_SIZE,write_size);
+            ret=posix_memalign(&w_buf, MemAlignSize, write_size);
             if(ret!=0){
                 printf("error:%ld posix_memalign falid!\n",ret);
                 return -1;
@@ -199,13 +199,13 @@ namespace leveldb{
         }
 
         
-        read_ofst=it->second->offset+(offset/LOGICAL_DISK_SIZE)*LOGICAL_DISK_SIZE;    //offset Align with logical block
-        de_ofst=offset % LOGICAL_DISK_SIZE;
+        read_ofst=it->second->offset+(offset / LogicalDiskSize) * LogicalDiskSize;    //offset Align with logical block
+        de_ofst=offset % LogicalDiskSize;
 
-        read_size=((count+de_ofst)%LOGICAL_DISK_SIZE) ? ((count+de_ofst)/LOGICAL_DISK_SIZE+1)*LOGICAL_DISK_SIZE : (count+de_ofst);   //size Align with logical block
+        read_size=((count+de_ofst) % LogicalDiskSize) ? ((count+de_ofst) / LogicalDiskSize + 1) * LogicalDiskSize : (count+de_ofst);   //size Align with logical block
 
         //r_buf=(void *)malloc(sector_count*512);
-        ret=posix_memalign(&r_buf,MEMALIGN_SIZE,read_size);
+        ret=posix_memalign(&r_buf, MemAlignSize, read_size);
         if(ret!=0){
             printf("error:%ld posix_memalign falid!\n",ret);
             return -1;
@@ -282,14 +282,14 @@ namespace leveldb{
             return -1;
         }
         struct Ldbfile *ldb=it->second;
-        uint64_t move_size=((ldb->size+PHYSICAL_DISK_SIZE-1)/PHYSICAL_DISK_SIZE)*PHYSICAL_DISK_SIZE;  //we write it ,can move directly, need not Align with logical block
+        uint64_t move_size=((ldb->size + PhysicalDiskSize - 1) / PhysicalDiskSize) * PhysicalDiskSize;  //we write it ,can move directly, need not Align with logical block
         uint64_t read_ofst=ldb->offset; 
         uint64_t file_size=ldb->size;
         int old_level=ldb->level;
         
         uint64_t read_time_begin=get_now_micros();
         //r_buf=(void *)malloc(sector_count*512);
-        ret=posix_memalign(&r_buf,MEMALIGN_SIZE,move_size);
+        ret=posix_memalign(&r_buf, MemAlignSize, move_size);
         if(ret!=0){
             printf("error:%ld posix_memalign falid!\n",ret);
             return -1;
@@ -441,7 +441,7 @@ namespace leveldb{
 
     void HMManager::update_com_window(int level){
         ssize_t window_num=adjust_com_window_num(level);
-        if(COM_WINDOW_SEQ) {
+        if(CompactionWindowSeq) {
             set_com_window_seq(level,window_num);
         }
         else{
@@ -463,7 +463,7 @@ namespace leveldb{
             case 5:
             case 6:
             case 7:
-                window_num = zone_info_[level].size()/COM_WINDOW_SCALE; //other level compaction window number is 1/COM_WINDOW_SCALE
+                window_num = zone_info_[level].size() / CompactionWindowSize; //other level compaction window number is 1/COM_WINDOW_SCALE
                 break;
             default:
                 break;

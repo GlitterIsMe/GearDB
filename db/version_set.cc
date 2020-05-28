@@ -1627,7 +1627,7 @@ bool Compaction::need_gear_com(){
   if(TotalFileSize(input_version_->files_[current_level])<MaxBytesForLevel(input_version_->vset_->options_,current_level)){ //本层未满，无需gear_compaction
     return false;
   }
-  if(TotalFileSize(input_version_->files_[current_level+1])<MaxBytesForLevel(input_version_->vset_->options_,current_level)/HAVE_WINDOW_SCALE){ //下层数据达到阈值的1/HAVE_WINDOW_SCALE,才有窗口
+  if(TotalFileSize(input_version_->files_[current_level+1])<MaxBytesForLevel(input_version_->vset_->options_,current_level)/SetCompactionWindow){ //下层数据达到阈值的1/HAVE_WINDOW_SCALE,才有窗口
     return false;
   }
   hm_manager_->update_com_window(current_level+1);

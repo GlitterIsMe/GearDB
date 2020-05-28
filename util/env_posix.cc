@@ -112,7 +112,7 @@ class HMComRamdomAccessFile : public RandomAccessFile {  //when compaction,we ca
       filenum=Parsefname(fname);
       ldb=hm_manager_->get_one_table(filenum);
       //buf_ = new char[ldb->size];
-      int ret=posix_memalign((void **)&buf_,MEMALIGN_SIZE,ldb->size);
+      int ret=posix_memalign((void **)&buf_, MemAlignSize, ldb->size);
       if(ret!=0){
           printf("error:%d posix_memalign falid!\n",ret);
       }
@@ -164,7 +164,7 @@ class HMWritableFile : public WritableFile {    //hm write file except L0 level
       }
       //buf_ = new char[Options().max_file_size + 1*1024*1024];
       uint64_t size=(Options().max_file_size + 1*1024*1024);
-      int ret=posix_memalign((void **)&buf_,MEMALIGN_SIZE,size);
+      int ret=posix_memalign((void **)&buf_, MemAlignSize, size);
       if(ret!=0){
           printf("error:%d posix_memalign falid!\n",ret);
       }
@@ -220,7 +220,7 @@ class HMWritableFileL0 : public WritableFile {    //hm write L0 level file
       }
       //buf_ = new char[Options().write_buffer_size + 1*1024*1024];
       uint64_t size=(Options().write_buffer_size + 1*1024*1024);
-      int ret=posix_memalign((void **)&buf_,MEMALIGN_SIZE,size);
+      int ret=posix_memalign((void **)&buf_, MemAlignSize, size);
       if(ret!=0){
           printf("error:%d posix_memalign falid!\n",ret);
       }
@@ -628,12 +628,12 @@ class PosixEnv : public Env {
     *result = NULL;
     Status s;
     if(isSSTableName(fname)){
-      if(flag && Find_Table_Old){
+      if(flag && FindTableOld){
         *result = new HMRamdomAccessFile(fname, Singleton::Gethmmanager());
         return Status::OK();
       }
       
-      if(Read_Whole_Table){
+      if(ReadWholeTable){
         *result = new HMComRamdomAccessFile(fname, Singleton::Gethmmanager(),buf_file);
         return Status::OK();
       }
