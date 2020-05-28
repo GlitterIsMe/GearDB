@@ -585,7 +585,7 @@ namespace hm {
             : started_bgthread_(false),
               mmap_limit_(MaxMmaps()),
               fd_limit_(MaxOpenFiles()),
-              hm_manager_(hm_manager_) {
+              hm_manager_(hm_manager) {
         PthreadCall("mutex_init", pthread_mutex_init(&mu_, NULL));
         PthreadCall("cvar_init", pthread_cond_init(&bgsignal_, NULL));
     }

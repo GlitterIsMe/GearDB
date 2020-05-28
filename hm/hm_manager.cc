@@ -76,7 +76,8 @@ namespace leveldb{
         for(i = first_zonenum_;i < zonenum_; i++){  //Traverse from the first sequential write zone
             if(bitmap_->get(i) == 0){
                 char filenamebuf[100];
-                snprintf(filenamebuf,sizeof(filenamebuf),"%s/%d",smr_filename_.c_str(),i);
+                snprintf(filenamebuf, sizeof(filenamebuf), "%s/%d", smr_filename_.c_str(), i);
+                //int fd = open(filenamebuf, O_CREAT | O_RDWR | O_TRUNC, 0666);
                 int fd = open(filenamebuf, O_RDWR | O_DIRECT | O_TRUNC);  //need O_TRUNC to set write_pointer = 0
                 if(fd == -1){
                     MyLog("error:open failed! path:%s\n",filenamebuf);
@@ -169,7 +170,7 @@ namespace leveldb{
 
         zf->write_pointer += write_size;
         struct Ldbfile *ldb= new Ldbfile(filenum,zf->zone,write_ofst,count,level);
-        table_map_.insert(std::pair<uint64_t, struct Ldbfile*>(filenum,ldb));
+        table_map_.insert(std::pair<uint64_t, Ldbfile*>(filenum,ldb));
         zone_info_[level][zone_info_[level].size()-1]->add_table(ldb);
         all_table_size += ldb->size;
         kv_store_sector += write_size;
@@ -187,7 +188,7 @@ namespace leveldb{
         ssize_t ret;
         uint64_t read_time_begin=get_now_micros();
 
-        std::map<uint64_t, struct Ldbfile*>::iterator it;
+        std::map<uint64_t, Ldbfile*>::iterator it;
         it=table_map_.find(filenum);
         if(it==table_map_.end()){
             printf(" table_map_ can't find table:%ld!\n",filenum);
@@ -228,14 +229,14 @@ namespace leveldb{
     }
 
     ssize_t HMManager::hm_delete(uint64_t filenum){
-        std::map<uint64_t, struct Ldbfile*>::iterator it;
+        std::map<uint64_t, Ldbfile*>::iterator it;
         it=table_map_.find(filenum);
         if(it!=table_map_.end()){
             struct Ldbfile *ldb=it->second;
             table_map_.erase(it);
             int level=ldb->level;
             uint64_t zone_id=ldb->zone;
-            std::vector<struct Zonefile*>::iterator iz=zone_info_[level].begin();
+            std::vector<Zonefile*>::iterator iz=zone_info_[level].begin();
             for(;iz!=zone_info_[level].end();iz++){
                 if(zone_id==(*iz)->zone){
                     (*iz)->delete_table(ldb);
@@ -243,7 +244,7 @@ namespace leveldb{
                         struct Zonefile* zf=(*iz);
                         zone_info_[level].erase(iz);
                         if(is_com_window(level,zone_id)){
-                            std::vector<struct Zonefile*>::iterator ic=com_window_[level].begin();
+                            std::vector<Zonefile*>::iterator ic=com_window_[level].begin();
                             for(;ic!=com_window_[level].end();ic++){
                                 if((*ic)->zone==zone_id){
                                     com_window_[level].erase(ic);
@@ -271,7 +272,7 @@ namespace leveldb{
     ssize_t HMManager::move_file(uint64_t filenum,int to_level){
         void *r_buf=NULL;
         ssize_t ret;
-        std::map<uint64_t, struct Ldbfile*>::iterator it;
+        std::map<uint64_t, Ldbfile*>::iterator it;
         it=table_map_.find(filenum);
         if(it==table_map_.end()){
             printf("error:move file failed! no find file:%ld\n",filenum);
@@ -322,7 +323,7 @@ namespace leveldb{
 
         wzf->write_pointer += move_size;
         ldb= new Ldbfile(filenum,wzf->zone,write_ofst,file_size,to_level);
-        table_map_.insert(std::pair<uint64_t, struct Ldbfile*>(filenum,ldb));
+        table_map_.insert(std::pair<uint64_t, Ldbfile*>(filenum,ldb));
         wzf->add_table(ldb);
         
         free(r_buf);
@@ -335,7 +336,7 @@ namespace leveldb{
     }
 
     struct Ldbfile* HMManager::get_one_table(uint64_t filenum){
-        std::map<uint64_t, struct Ldbfile*>::iterator it;
+        std::map<uint64_t, Ldbfile*>::iterator it;
         it=table_map_.find(filenum);
         if(it==table_map_.end()){
             printf("error:no find file:%ld\n",filenum);
@@ -345,7 +346,7 @@ namespace leveldb{
     }
 
     void HMManager::get_zone_table(uint64_t filenum,std::vector<struct Ldbfile*> **zone_table){
-        std::map<uint64_t, struct Ldbfile*>::iterator it;
+        std::map<uint64_t, Ldbfile*>::iterator it;
         it=table_map_.find(filenum);
         if(it==table_map_.end()){
             printf("error:no find file:%ld\n",filenum);
@@ -365,7 +366,7 @@ namespace leveldb{
     }
 
     bool HMManager::trivial_zone_size_move(uint64_t filenum){
-        std::map<uint64_t, struct Ldbfile*>::iterator it;
+        std::map<uint64_t, Ldbfile*>::iterator it;
         it=table_map_.find(filenum);
         if(it==table_map_.end()){
             printf("error:no find file:%ld\n",filenum);
@@ -384,7 +385,7 @@ namespace leveldb{
     }
 
     void HMManager::move_zone(uint64_t filenum){
-        std::map<uint64_t, struct Ldbfile*>::iterator it;
+        std::map<uint64_t, Ldbfile*>::iterator it;
         it=table_map_.find(filenum);
         if(it==table_map_.end()){
             printf("error:no find file:%ld\n",filenum);
@@ -397,7 +398,7 @@ namespace leveldb{
         struct Zonefile* zf;
 
         if(is_com_window(level,zone_id)){
-            std::vector<struct Zonefile*>::iterator ic=com_window_[level].begin();
+            std::vector<Zonefile*>::iterator ic=com_window_[level].begin();
             for(;ic!=com_window_[level].end();ic++){
                 if((*ic)->zone==zone_id){
                     com_window_[level].erase(ic);
@@ -516,7 +517,7 @@ namespace leveldb{
     }
 
     bool HMManager::is_com_window(int level,uint64_t zone){
-        std::vector<struct Zonefile*>::iterator it;
+        std::vector<Zonefile*>::iterator it;
         for(it=com_window_[level].begin();it!=com_window_[level].end();it++){
             if((*it)->zone==zone){
                 return true;
@@ -526,8 +527,8 @@ namespace leveldb{
     }
 
     void HMManager::get_com_window_table(int level,std::vector<struct Ldbfile*> *window_table){
-        std::vector<struct Zonefile*>::iterator iz;
-        std::vector<struct Ldbfile*>::iterator it;
+        std::vector<Zonefile*>::iterator iz;
+        std::vector<Ldbfile*>::iterator it;
         for(iz=com_window_[level].begin();iz!=com_window_[level].end();iz++){
             for(it=(*iz)->ldb.begin();it!=(*iz)->ldb.end();it++){
                 window_table->push_back((*it));
@@ -553,7 +554,7 @@ namespace leveldb{
     }
 
     void HMManager::get_one_level(int level,uint64_t *table_num,uint64_t *table_size){
-        std::vector<struct Zonefile*>::iterator it;
+        std::vector<Zonefile*>::iterator it;
         uint64_t num=0;
         uint64_t size=0;
         for(it=zone_info_[level].begin();it!=zone_info_[level].end();it++){
@@ -594,7 +595,7 @@ namespace leveldb{
         uint64_t table_size;
         uint64_t zone_id;
         float percent;
-        std::vector<struct Zonefile*>::iterator it;
+        std::vector<Zonefile*>::iterator it;
         int i;
         for(i=0;i<config::kNumLevels;i++){
             if(zone_info_[i].size() != 0){
@@ -631,7 +632,7 @@ namespace leveldb{
         uint64_t table_size;
         uint64_t zone_id;
         float percent;
-        std::vector<struct Zonefile*>::iterator it;
+        std::vector<Zonefile*>::iterator it;
         int i;
         for(i=0;i<config::kNumLevels;i++){
             if(zone_info_[i].size() != 0){
@@ -670,7 +671,7 @@ namespace leveldb{
         uint64_t zone_id;
         struct Zonefile* zf;
         float percent;
-        std::vector<struct Zonefile*>::iterator it;
+        std::vector<Zonefile*>::iterator it;
         int i;
         for(i=0;i<config::kNumLevels;i++){
             get_one_level(i,&table_num,&table_size);

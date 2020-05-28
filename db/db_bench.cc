@@ -1058,8 +1058,8 @@ int main(int argc, char** argv) {
       FLAGS_open_files = n;
     } else if (strncmp(argv[i], "--db=", 5) == 0) {
       FLAGS_db = argv[i] + 5;
-    } else if (strncmp(argv[i], "--hm_path=", 11) == 0) {
-        FLAGS_hm_path = argv[i] + 11;
+    } else if (strncmp(argv[i], "--hm_path=", 10) == 0) {
+        FLAGS_hm_path = argv[i] + 10;
     } else {
       fprintf(stderr, "Invalid flag '%s'\n", argv[i]);
       exit(1);
