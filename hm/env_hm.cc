@@ -121,7 +121,7 @@ namespace hm {
 
     public:
         HMComRamdomAccessFile(const std::string &fname, HMManager *hm_manager, const char *buf_file)
-                : filename_(fname), hm_manager_(hm_manager) {
+                : filename_(fname), hm_manager_(hm_manager), buf_(nullptr) {
             filenum = Parsefname(fname);
             ldb = hm_manager_->get_one_table(filenum);
             //buf_ = new char[ldb->size];
@@ -142,8 +142,8 @@ namespace hm {
         }
 
         virtual ~HMComRamdomAccessFile() {
-            if (!buf_) {
-                delete buf_;
+            if (buf_ != nullptr) {
+                free(buf_);
             }
             //MyLog("free table:%ld\n",filenum);
         }
@@ -168,7 +168,7 @@ namespace hm {
 
     public:
         HMWritableFile(const std::string &fname, HMManager *hm_manager, int level)
-                : fname_(fname), total_size_(0), hm_manager_(hm_manager), level_(level) {
+                : fname_(fname), total_size_(0), hm_manager_(hm_manager), level_(level), buf_(nullptr) {
             if (level_ == -1) {
                 printf("ldb file have error level!table:%ld\n", Parsefname(fname_));
             }
@@ -181,7 +181,7 @@ namespace hm {
         }
 
         ~HMWritableFile() {
-            if (!buf_) {
+            if (buf_ != nullptr) {
                 free(buf_);
             }
         }
@@ -224,7 +224,7 @@ namespace hm {
 
     public:
         HMWritableFileL0(const std::string &fname, HMManager *hm_manager, int level)
-                : fname_(fname), total_size_(0), hm_manager_(hm_manager), level_(level) {
+                : fname_(fname), total_size_(0), hm_manager_(hm_manager), level_(level), buf_(nullptr) {
             if (level_ == -1) {
                 printf("ldb file have error level!table:%ld\n", Parsefname(fname_));
             }
@@ -237,7 +237,7 @@ namespace hm {
         }
 
         ~HMWritableFileL0() {
-            if (buf_ != NULL) {
+            if (buf_ != nullptr) {
                 free(buf_);
             }
         }
