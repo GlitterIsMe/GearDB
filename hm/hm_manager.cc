@@ -72,7 +72,7 @@ namespace leveldb {
         //To be improved
     }
 
-    struct Zonefile *HMManager::hm_alloc_zone() {
+    Zonefile *HMManager::hm_alloc_zone() {
         uint64_t i;
         for (i = first_zonenum_; i < zonenum_; i++) {  //Traverse from the first sequential write zone
             if (bitmap_->get(i) == 0) {
@@ -84,7 +84,7 @@ namespace leveldb {
                     MyLog("error:open failed! path:%s\n", filenamebuf);
                     continue;
                 }
-                struct Zonefile *zf = new Zonefile(i, fd, 0);
+                Zonefile *zf = new Zonefile(i, fd, 0);
                 bitmap_->set(i);
 
                 return zf;
@@ -182,7 +182,7 @@ namespace leveldb {
             printf(" table_map_ can't find table:%ld!\n", filenum);
             return -1;
         }
-        struct Zonefile *zf = get_zone(table_map_[filenum]->zone, table_map_[filenum]->level);
+        Zonefile *zf = get_zone(table_map_[filenum]->zone, table_map_[filenum]->level);
         if (zf == nullptr) {
             printf(" get_zone can't find zone:%ld level:%d! \n", table_map_[filenum]->zone, table_map_[filenum]->level);
             return -1;
@@ -344,7 +344,7 @@ namespace leveldb {
 
         int level = table_map_[filenum]->level;
         uint64_t zone_id = table_map_[filenum]->zone;
-        std::vector<struct Zonefile *>::iterator iz;
+        std::vector<Zonefile *>::iterator iz;
         for (iz = zone_info_[level].begin(); iz != zone_info_[level].end(); iz++) {
             if ((*iz)->zone() == zone_id) {
                 *zone_table = &((*iz)->ldb());
@@ -360,7 +360,7 @@ namespace leveldb {
             return false;
         }
 
-        struct Zonefile *zf = get_zone(table_map_[filenum]->zone, table_map_[filenum]->level);
+        Zonefile *zf = get_zone(table_map_[filenum]->zone, table_map_[filenum]->level);
         if (zf == nullptr) {
             printf(" get_zone can't find zone:%ld level:%d! \n", table_map_[filenum]->zone, table_map_[filenum]->level);
             return -1;
@@ -378,8 +378,8 @@ namespace leveldb {
 
         int level = table_map_[filenum]->level;
         uint64_t zone_id = table_map_[filenum]->zone;
-        std::vector<struct Zonefile *>::iterator iz;
-        struct Zonefile *zf;
+        std::vector<Zonefile *>::iterator iz;
+        Zonefile *zf;
 
         if (is_com_window(level, zone_id)) {
             std::vector<Zonefile *>::iterator ic = com_window_[level].begin();
@@ -549,7 +549,7 @@ namespace leveldb {
         uint64_t table_size = 0;
         float percent = 0;
         int zone_num = 0;
-        struct Zonefile *zf;
+        Zonefile *zf;
 
         for (i = 0; i < config::kNumLevels; i++) {
             get_one_level(i, &table_num, &table_size);
