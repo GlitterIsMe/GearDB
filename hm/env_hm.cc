@@ -27,7 +27,7 @@ namespace hm {
     }
 
     static uint64_t Parsefname(std::string fname) {
-        int pos = fname.find('.');
+        int pos = fname.find_last_of('.');
         int pos2 = fname.find_last_of('/');
         int num = pos - pos2 - 1;
         std::string raw = fname.substr(pos2 + 1, num);
