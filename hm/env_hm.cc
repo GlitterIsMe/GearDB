@@ -182,7 +182,7 @@ namespace hm {
 
         ~HMWritableFile() {
             if (!buf_) {
-                delete buf_;
+                free(buf_);
             }
         }
 
@@ -238,7 +238,7 @@ namespace hm {
 
         ~HMWritableFileL0() {
             if (buf_ != NULL) {
-                delete buf_;
+                free(buf_);
             }
         }
 
