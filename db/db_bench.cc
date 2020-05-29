@@ -1067,7 +1067,7 @@ int main(int argc, char** argv) {
   }
 
   leveldb::g_manager = new leveldb::HMManager(leveldb::Options().comparator, std::string(FLAGS_hm_path));
-  leveldb::g_env = new hm::HMEnv(leveldb::g_manager);
+  leveldb::g_env = hm::HMEnv::Default(leveldb::g_manager);
 
   // Choose a location for the test database if none given with --db=<path>
   if (FLAGS_db == NULL) {
@@ -1078,5 +1078,6 @@ int main(int argc, char** argv) {
 
   leveldb::Benchmark benchmark;
   benchmark.Run();
+  delete leveldb::g_manager;
   return 0;
 }

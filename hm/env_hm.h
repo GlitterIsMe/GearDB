@@ -133,7 +133,7 @@ namespace hm {
 
         void SleepForMicroseconds(int micros) override;
 
-        static Env *Default();
+        static Env *Default(leveldb::HMManager* hm_manager);
 
     private:
         void PthreadCall(const char *label, int result);

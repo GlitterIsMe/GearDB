@@ -909,18 +909,15 @@ namespace hm {
         return NULL;
     }
 
-
-    static pthread_once_t once = PTHREAD_ONCE_INIT;
     static leveldb::Env *default_env;
 
-    static void InitDefaultEnv() {
-        HMManager *hm_manager = nullptr;
-        default_env = reinterpret_cast<leveldb::Env *>(new HMEnv(hm_manager));
+    static void InitDefaultEnv(leveldb::HMManager* hm_manager) {
+        default_env = new HMEnv(hm_manager);
     }
 
 
-    leveldb::Env *HMEnv::Default() {
-        pthread_once(&once, InitDefaultEnv);
+    leveldb::Env *HMEnv::Default(leveldb::HMManager *hm_manager) {
+        InitDefaultEnv(hm_manager);
         return default_env;
     }
 }
