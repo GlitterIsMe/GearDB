@@ -33,7 +33,8 @@
 #include "util/logging.h"
 #include "util/mutexlock.h"
 
-#include "../hm/container.h"
+#include "hm/container.h"
+#include "hm/statistics.h"
 
 namespace leveldb {
 
@@ -1218,6 +1219,10 @@ Status DBImpl::DoMyCompactionWork(CompactionState* compact){
 
   mutex_.Lock();
   MyLog4("%ld,%ld,%ld,%.2f\n",++compaction_num_,compact->c_read_bytes/1048576,compact->c_write_bytes/1048576,compact->c_micros*1e-6);
+#ifdef METRICS_ON
+  global_metrics().RecordFile(PER_COMPACTION, compact->c_micros, compact->c_write_bytes);
+  global_metrics().AddSize(COMPACTION_WRITE, compact->c_write_bytes);
+#endif
   if (status.ok()) {
     status = InstallCompactionResults(compact);
   }
@@ -1600,6 +1605,10 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
   mutex_.Lock();
   stats_[compact->compaction->level() + 1].Add(stats);
   MyLog4("%ld,%ld,%ld,%.2f\n",++compaction_num_,stats.bytes_read/1048576,stats.bytes_written/1048576,stats.micros*1e-6);
+#ifdef METRICS_ON
+  global_metrics().RecordFile(PER_COMPACTION, stats.micros, stats.bytes_written);
+  global_metrics().AddSize(COMPACTION_WRITE, stats.bytes_written);
+#endif
   if (status.ok()) {
     status = InstallCompactionResults(compact);
   }
@@ -1789,7 +1798,7 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* my_batch) {
     {
       mutex_.Unlock();
 
-      double start_micros=env_->NowMicros();
+      uint64_t start_micros=env_->NowMicros();
 
       status = log_->AddRecord(WriteBatchInternal::Contents(updates));
       bool sync_error = false;
@@ -1800,8 +1809,12 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* my_batch) {
         }
       }
 
-      double end_micros=env_->NowMicros();
-      log_write_time_ += (end_micros - start_micros);
+      uint64_t end_micros=env_->NowMicros();
+      //log_write_time_ += (end_micros - start_micros);
+#ifdef METRICS_ON
+      global_metrics().AddTime(LOG_WRITE, end_micros - start_micros);
+      global_metrics().AddSize(USER_WRITE, updates->ApproximateSize());
+#endif
 
       if (status.ok()) {
         status = WriteBatchInternal::InsertInto(updates, mem_);

@@ -2,8 +2,10 @@
 #include <fcntl.h>
 #include <sys/time.h>
 
-#include "../hm/hm_manager.h"
-
+#include "hm/hm_manager.h"
+#ifdef METRICS_ON
+#include "hm/statistics.h"
+#endif
 
 namespace leveldb {
     static uint64_t get_now_micros() {
@@ -78,8 +80,8 @@ namespace leveldb {
             if (bitmap_->get(i) == 0) {
                 char filenamebuf[100];
                 snprintf(filenamebuf, sizeof(filenamebuf), "%s/%d", smr_filename_.c_str(), i);
-                //int fd = open(filenamebuf, O_CREAT | O_RDWR | O_TRUNC, 0666);
-                int fd = open(filenamebuf, O_RDWR | O_DIRECT | O_TRUNC);  //need O_TRUNC to set write_pointer = 0
+                int fd = open(filenamebuf, O_CREAT | O_RDWR | O_TRUNC, 0666);
+                //int fd = open(filenamebuf, O_RDWR | O_DIRECT | O_TRUNC);  //need O_TRUNC to set write_pointer = 0
                 if (fd == -1) {
                     MyLog("error:open failed! path:%s\n", filenamebuf);
                     continue;
@@ -125,7 +127,6 @@ namespace leveldb {
     }
 
     ssize_t HMManager::hm_write(int level, uint64_t filenum, const void *buf, uint64_t count) {
-
         hm_alloc(level, count);
         void *w_buf = nullptr;
         Zonefile *zf = zone_info_[level].back();
@@ -156,7 +157,10 @@ namespace leveldb {
         }
         uint64_t write_time_end = get_now_micros();
         write_time += (write_time_end - write_time_begin);
-
+#ifdef METRICS_ON
+        global_metrics().AddSize(ACTUAL_WRITE, ret);
+        global_metrics().AddTime(WRITE_DISK, write_time_end - write_time_begin);
+#endif
         zf->forward_write_pointer(write_size);
         Ldbfile *ldb = new Ldbfile(filenum, zf->zone(), write_ofst, count, level);
         table_map_[filenum] = ldb;
@@ -190,7 +194,8 @@ namespace leveldb {
 
 
         read_ofst =
-                table_map_[filenum]->offset + (offset / LogicalDiskSize) * LogicalDiskSize;    //offset Align with logical block
+                table_map_[filenum]->offset +
+                (offset / LogicalDiskSize) * LogicalDiskSize;    //offset Align with logical block
         de_ofst = offset % LogicalDiskSize;
 
         read_size = ((count + de_ofst) % LogicalDiskSize) ? ((count + de_ofst) / LogicalDiskSize + 1) * LogicalDiskSize
@@ -214,18 +219,22 @@ namespace leveldb {
         uint64_t read_time_end = get_now_micros();
         read_time += (read_time_end - read_time_begin);
         kv_read_sector += read_size;
+#ifdef METRICS_ON
+        global_metrics().AddTime(READ_DISK, read_time_end - read_time_begin);
+        global_metrics().RecordFile(ZONE_ACCESS, read_time_begin, zf->zone());
+#endif
         return count;
     }
 
     ssize_t HMManager::hm_delete(uint64_t filenum) {
-        if (table_map_.find(filenum) != table_map_.end()){
+        if (table_map_.find(filenum) != table_map_.end()) {
             Ldbfile *ldb = table_map_[filenum];
             // remove from table map
             table_map_.erase(filenum);
             int level = ldb->level;
             uint64_t zone_id = ldb->zone;
             std::vector<Zonefile *>::iterator iz = zone_info_[level].begin();
-            for (; iz != zone_info_[level].end(); iz++){
+            for (; iz != zone_info_[level].end(); iz++) {
                 if (zone_id == (*iz)->zone()) {
                     // remove table from zone file
                     (*iz)->delete_table(ldb);
@@ -236,7 +245,7 @@ namespace leveldb {
                         if (is_com_window(level, zone_id)) {
                             std::vector<Zonefile *>::iterator ic = com_window_[level].begin();
                             for (; ic != com_window_[level].end();
-                            ic++){
+                                   ic++) {
                                 if ((*ic)->zone() == zone_id) {
                                     // remove zonefile from compaction window
                                     com_window_[level].erase(ic);

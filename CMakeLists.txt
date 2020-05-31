@@ -104,6 +104,11 @@ add_definitions(-DLEVELDB_PLATFORM_POSIX)
 # Must be included before CMAKE_INSTALL_INCLUDEDIR is used.
 include(GNUInstallDirs)
 
+option(METRICS_ON "turn on metrics" ON)
+if(METRICS_ON)
+    add_definitions(-DMETRICS_ON)
+endif(METRICS_ON)
+
 add_library(geardb "")
 cmake_policy(SET CMP0076 OLD)
 target_sources(geardb
@@ -194,6 +199,8 @@ target_sources(geardb
         "hm/my_log.h"
         "hm/env_hm.cc"
         "hm/env_hm.h"
+        "hm/statistics.cc"
+        "hm/statistics.h"
         )
 
 #target_sources(geardb

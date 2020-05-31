@@ -19,6 +19,10 @@
 #include "util/random.h"
 #include "util/testutil.h"
 
+#ifdef METRICS_ON
+#include "hm/statistics.h"
+#endif
+
 #define SLEEP_WAIT_FILL 0  //means waiting for compaction after fillrandom to balance the data of each level; 
                           //0 means not waiting
 
@@ -1078,6 +1082,7 @@ int main(int argc, char** argv) {
 
   leveldb::Benchmark benchmark;
   benchmark.Run();
+  leveldb::global_metrics().Persist();
   delete leveldb::g_manager;
   return 0;
 }

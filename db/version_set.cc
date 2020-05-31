@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <stdio.h>
+#include <chrono>
 #include "db/filename.h"
 #include "db/log_reader.h"
 #include "db/log_writer.h"
@@ -17,6 +18,11 @@
 #include "table/two_level_iterator.h"
 #include "util/coding.h"
 #include "util/logging.h"
+
+#ifdef METRICS_ON
+
+#include "hm/statistics.h"
+#endif
 
 namespace leveldb {
 
@@ -362,6 +368,9 @@ Status Version::Get(const ReadOptions& options,
   std::vector<FileMetaData*> tmp;
   FileMetaData* tmp2;
   for (int level = 0; level < config::kNumLevels; level++) {
+#ifdef METRICS_ON
+      auto start = std::chrono::high_resolution_clock::now();
+#endif
     size_t num_files = files_[level].size();
     if (num_files == 0) continue;
 
@@ -401,7 +410,11 @@ Status Version::Get(const ReadOptions& options,
         }
       }
     }
-
+#ifdef METRICS_ON
+    auto end = std::chrono::high_resolution_clock::now();
+    auto micros = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    global_metrics().AddTime(LOCATING, micros.count());
+#endif
     for (uint32_t i = 0; i < num_files; ++i) {
       if (last_file_read != NULL && stats->seek_file == NULL) {
         // We have had more than one seek for this read.  Charge the 1st file.
