@@ -91,9 +91,11 @@ namespace leveldb {
     void Metrics::RecordFile(leveldb::WriteFileMetricsType metrics_type, uint64_t arg1, uint64_t arg2) {
         switch (metrics_type) {
             case PER_COMPACTION:
-                per_compaction_io << arg1 << ", " << arg2 << "\n";
+                // arg1 = compaction time, arg2 = compaction write bytes
+                per_compaction_io << arg1 << ", " << arg2 / 1024.0 / 1024 << "\n";
                 break;
             case ZONE_ACCESS:
+                // arg1 = access time, arg2 = accessed zone
                 zone_access_file << arg1 << ", " << arg2 << "\n";
                 break;
             default:
@@ -110,7 +112,8 @@ namespace leveldb {
                << "total_gc_time, " << time_gc << ",\n"
                << "total_user_write(GB), " << size_user_write / 1024.0 / 1024 / 1024 << ",\n"
                << "total_disk_write(GB), " << size_disk_write / 1024.0 / 1024 / 1024 << ",\n"
-               << "total_gc_write(GB), " << size_comapction / 1024.0 / 1024 / 1024 << ",\n"
+               << "total_compaction_write(GB), " << size_comapction / 1024.0 / 1024 / 1024 << ",\n"
+               << "total_gc_write(GB), " << size_gc_write / 1024.0 / 1024 / 1024 << ",\n"
                << "total_locating_time, " << time_locating_sstable << ",\n"
                << "total_read_disk_time, " << time_read_disk << ",\n"
                << "total_gc_time, " << time_gc << ",\n";

@@ -1222,6 +1222,7 @@ Status DBImpl::DoMyCompactionWork(CompactionState* compact){
 #ifdef METRICS_ON
   global_metrics().RecordFile(PER_COMPACTION, compact->c_micros, compact->c_write_bytes);
   global_metrics().AddSize(COMPACTION_WRITE, compact->c_write_bytes);
+  global_metrics().AddTime(COMPACTION, compact->c_micros);
 #endif
   if (status.ok()) {
     status = InstallCompactionResults(compact);
@@ -1608,6 +1609,7 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
 #ifdef METRICS_ON
   global_metrics().RecordFile(PER_COMPACTION, stats.micros, stats.bytes_written);
   global_metrics().AddSize(COMPACTION_WRITE, stats.bytes_written);
+  global_metrics().AddTime(COMPACTION, stats.micros);
 #endif
   if (status.ok()) {
     status = InstallCompactionResults(compact);

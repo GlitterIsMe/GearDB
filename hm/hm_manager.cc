@@ -80,8 +80,8 @@ namespace leveldb {
             if (bitmap_->get(i) == 0) {
                 char filenamebuf[100];
                 snprintf(filenamebuf, sizeof(filenamebuf), "%s/%d", smr_filename_.c_str(), i);
-                int fd = open(filenamebuf, O_CREAT | O_RDWR | O_TRUNC, 0666);
-                //int fd = open(filenamebuf, O_RDWR | O_DIRECT | O_TRUNC);  //need O_TRUNC to set write_pointer = 0
+                //int fd = open(filenamebuf, O_CREAT | O_RDWR | O_TRUNC, 0666);
+                int fd = open(filenamebuf, O_RDWR | O_DIRECT | O_TRUNC);  //need O_TRUNC to set write_pointer = 0
                 if (fd == -1) {
                     MyLog("error:open failed! path:%s\n", filenamebuf);
                     continue;
@@ -174,7 +174,7 @@ namespace leveldb {
         return write_size;
     }
 
-    ssize_t HMManager::hm_read(uint64_t filenum, void *buf, uint64_t count, uint64_t offset) {
+    ssize_t HMManager::hm_read(uint64_t filenum, void *buf, uint64_t count, uint64_t offset, ReadType type) {
         void *r_buf = nullptr;
         uint64_t read_size;
         uint64_t read_ofst;
@@ -220,8 +220,10 @@ namespace leveldb {
         read_time += (read_time_end - read_time_begin);
         kv_read_sector += read_size;
 #ifdef METRICS_ON
-        global_metrics().AddTime(READ_DISK, read_time_end - read_time_begin);
-        global_metrics().RecordFile(ZONE_ACCESS, read_time_begin, zf->zone());
+        if(type = GET_READ){
+            global_metrics().AddTime(READ_DISK, read_time_end - read_time_begin);
+            global_metrics().RecordFile(ZONE_ACCESS, read_time_begin, zf->zone());
+        }
 #endif
         return count;
     }

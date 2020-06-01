@@ -21,13 +21,18 @@
 
 namespace leveldb{
 
+    enum ReadType{
+        COMPACTION_READ,
+        GET_READ,
+    };
+
     class HMManager {
     public:
         HMManager(const Comparator *icmp, std::string smr_disk);
         ~HMManager();
         
         ssize_t hm_write(int level,uint64_t filenum,const void *buf,uint64_t count);   //write a SSTable file to a level
-        ssize_t hm_read(uint64_t filenum,void *buf,uint64_t count, uint64_t offset);   //read a SSTable file
+        ssize_t hm_read(uint64_t filenum,void *buf,uint64_t count, uint64_t offset, ReadType type);   //read a SSTable file
         ssize_t hm_delete(uint64_t filenum);                                           //delete a SSTable file
         ssize_t move_file(uint64_t filenum,int to_level);                              //move a SSTable file
         struct Ldbfile* get_one_table(uint64_t filenum);                               //get a SSTable file pointer

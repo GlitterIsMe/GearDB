@@ -86,7 +86,7 @@ class HMRamdomAccessFile : public RandomAccessFile {  //hm read file
     virtual Status Read(uint64_t offset, size_t n, Slice *result,char *scratch) const {
       Status s;
       ssize_t r = -1;
-      r = hm_manager_->hm_read(filenum, scratch, n, offset);
+      r = hm_manager_->hm_read(filenum, scratch, n, offset, GET_READ);
       if(r<0){
         s = PosixError(filename_, errno);
         return s;
@@ -121,7 +121,7 @@ class HMComRamdomAccessFile : public RandomAccessFile {  //when compaction,we ca
           memcpy(buf_,buf_file,ldb->size);
       }
       else{
-        r = hm_manager_->hm_read(filenum, buf_, ldb->size, 0);
+        r = hm_manager_->hm_read(filenum, buf_, ldb->size, 0, COMPACTION_READ);
         if(r<0){
           st= PosixError(filename_, errno);
         }
