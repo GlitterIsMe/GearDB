@@ -7,7 +7,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <elf.h>
 
 namespace leveldb{
     enum TimeMetricsType{
