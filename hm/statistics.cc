@@ -115,8 +115,7 @@ namespace leveldb {
                << "total_compaction_write(GB), " << size_comapction / 1024.0 / 1024 / 1024 << ",\n"
                << "total_gc_write(GB), " << size_gc_write / 1024.0 / 1024 / 1024 << ",\n"
                << "total_locating_time, " << time_locating_sstable << ",\n"
-               << "total_read_disk_time, " << time_read_disk << ",\n"
-               << "total_gc_time, " << time_gc << ",\n";
+               << "total_read_disk_time, " << time_read_disk << ",\n";
         output.close();
     }
 

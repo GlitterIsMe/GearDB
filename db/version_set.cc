@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <stdio.h>
-#include <chrono>
 #include "db/filename.h"
 #include "db/log_reader.h"
 #include "db/log_writer.h"
@@ -20,7 +19,7 @@
 #include "util/logging.h"
 
 #ifdef METRICS_ON
-
+#include <chrono>
 #include "hm/statistics.h"
 #endif
 

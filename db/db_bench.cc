@@ -19,11 +19,9 @@
 #include "util/random.h"
 #include "util/testutil.h"
 
-#ifdef METRICS_ON
 #include "hm/statistics.h"
-#endif
 
-#define SLEEP_WAIT_FILL 0  //means waiting for compaction after fillrandom to balance the data of each level; 
+#define SLEEP_WAIT_FILL 1  //means waiting for compaction after fillrandom to balance the data of each level;
                           //0 means not waiting
 
 // Comma-separated list of operations to run in the specified order
