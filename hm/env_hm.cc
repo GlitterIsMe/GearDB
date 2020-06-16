@@ -916,7 +916,7 @@ namespace hm {
     }
 
 
-    leveldb::Env *HMEnv::Default(leveldb::HMManager *hm_manager) {
+    leveldb::Env* HMEnv::Default(leveldb::HMManager *hm_manager) {
         InitDefaultEnv(hm_manager);
         return default_env;
     }

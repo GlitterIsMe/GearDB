@@ -92,6 +92,7 @@ namespace leveldb {
                 return zf;
             }
         }
+
         printf("error:hm_alloc_zone failed!\n");
         return nullptr;
     }
@@ -191,8 +192,6 @@ namespace leveldb {
             printf(" get_zone can't find zone:%ld level:%d! \n", table_map_[filenum]->zone, table_map_[filenum]->level);
             return -1;
         }
-
-
         read_ofst =
                 table_map_[filenum]->offset +
                 (offset / LogicalDiskSize) * LogicalDiskSize;    //offset Align with logical block

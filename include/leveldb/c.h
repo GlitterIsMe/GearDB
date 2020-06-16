@@ -68,6 +68,8 @@ typedef struct leveldb_writablefile_t  leveldb_writablefile_t;
 typedef struct leveldb_writebatch_t    leveldb_writebatch_t;
 typedef struct leveldb_writeoptions_t  leveldb_writeoptions_t;
 
+/// geardb
+typedef struct geardb_hmmanager_t geardb_hmmanager_t;
 /* DB operations */
 
 LEVELDB_EXPORT leveldb_t* leveldb_open(const leveldb_options_t* options,
@@ -184,6 +186,7 @@ LEVELDB_EXPORT void leveldb_options_set_cache(leveldb_options_t*,
 LEVELDB_EXPORT void leveldb_options_set_block_size(leveldb_options_t*, size_t);
 LEVELDB_EXPORT void leveldb_options_set_block_restart_interval(
     leveldb_options_t*, int);
+LEVELDB_EXPORT void leveldb_options_set_hmmanager(leveldb_options_t* opt, geardb_hmmanager_t*);
 
 enum {
   leveldb_no_compression = 0,
@@ -257,6 +260,12 @@ LEVELDB_EXPORT int leveldb_major_version();
 
 /* Return the minor version number for this release. */
 LEVELDB_EXPORT int leveldb_minor_version();
+
+/* HMManager */
+LEVELDB_EXPORT geardb_hmmanager_t* geardb_hmmanager_create();
+LEVELDB_EXPORT void* geardb_hmmanager_destroy(geardb_hmmanager_t* hmmanager);
+LEVELDB_EXPORT leveldb_env_t* geardb_hm_env_create(geardb_hmmanager_t* hmmanager);
+
 
 #ifdef __cplusplus
 }  /* end extern "C" */

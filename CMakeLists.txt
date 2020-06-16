@@ -24,7 +24,6 @@ endif(NOT CMAKE_CXX_STANDARD)
 #option(GEARDB_BUILD_TESTS "Build GearDB's unit tests" ON)
 option(GEARDB_BUILD_BENCHMARKS "Build GearDB's benchmarks" ON)
 
-
 include(CheckIncludeFile)
 check_include_file("unistd.h" HAVE_UNISTD_H)
 
@@ -113,7 +112,6 @@ add_library(geardb "")
 cmake_policy(SET CMP0076 OLD)
 target_sources(geardb
         PRIVATE
-        "db/autocompact_test.cc"
         "db/builder.cc"
         "db/builder.h"
         "db/c.cc"
@@ -209,6 +207,15 @@ target_sources(geardb
 #        "helpers/memenv/memenv.h"
 #        )
 
+if(BUILD_SHARED_LIBS)
+    target_sources(
+            geardb
+            PRIVATE
+            "util/testutil.cc"
+            "util/testutil.h"
+    )
+endif(BUILD_SHARED_LIBS)
+
 target_include_directories(geardb
         PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
@@ -217,6 +224,20 @@ target_include_directories(geardb
 
 set_target_properties(geardb
         PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
+
+target_compile_definitions(geardb
+        PRIVATE
+        # Used by include/export.h when building shared libraries.
+        LEVELDB_COMPILE_LIBRARY
+        )
+
+if(BUILD_SHARED_LIBS)
+    target_compile_definitions(geardb
+            PUBLIC
+            # Used by include/export.h.
+            LEVELDB_SHARED_LIBRARY
+            )
+endif(BUILD_SHARED_LIBS)
 
 if(HAVE_CRC32C)
     target_link_libraries(geardb crc32c)
@@ -232,10 +253,10 @@ endif(HAVE_TCMALLOC)
 find_package(Threads REQUIRED)
 target_link_libraries(geardb Threads::Threads)
 
-add_executable(leveldbutil
-        "db/leveldbutil.cc"
-        )
-target_link_libraries(leveldbutil geardb)
+#add_executable(leveldbutil
+ #       "db/leveldbutil.cc"
+ #       )
+#target_link_libraries(leveldbutil geardb)
 
 if(GEARDB_BUILD_BENCHMARKS)
     function(geardb_benchmark bench_file)

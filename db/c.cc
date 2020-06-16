@@ -15,6 +15,8 @@
 #include "leveldb/options.h"
 #include "leveldb/status.h"
 #include "leveldb/write_batch.h"
+#include "hm/hm_manager.h"
+#include "hm/env_hm.h"
 
 using leveldb::Cache;
 using leveldb::Comparator;
@@ -40,6 +42,8 @@ using leveldb::Status;
 using leveldb::WritableFile;
 using leveldb::WriteBatch;
 using leveldb::WriteOptions;
+using leveldb::HMManager;
+using hm::HMEnv;
 
 extern "C" {
 
@@ -56,6 +60,9 @@ struct leveldb_randomfile_t   { RandomAccessFile* rep; };
 struct leveldb_writablefile_t { WritableFile*     rep; };
 struct leveldb_logger_t       { Logger*           rep; };
 struct leveldb_filelock_t     { FileLock*         rep; };
+
+/// geardb
+struct geardb_hmmanager_t     {HMManager*         rep; };
 
 struct leveldb_comparator_t : public Comparator {
   void* state_;
@@ -450,6 +457,10 @@ void leveldb_options_set_compression(leveldb_options_t* opt, int t) {
   opt->rep.compression = static_cast<CompressionType>(t);
 }
 
+void leveldb_options_set_hmmanager(leveldb_options_t* opt, geardb_hmmanager_t* hm) {
+    opt->rep.hm_manager = hm->rep;
+}
+
 leveldb_comparator_t* leveldb_comparator_create(
     void* state,
     void (*destructor)(void*),
@@ -590,6 +601,25 @@ int leveldb_major_version() {
 
 int leveldb_minor_version() {
   return kMinorVersion;
+}
+
+geardb_hmmanager_t* geardb_hmmanager_create() {
+    /// TODO: Make smr_disk mutable
+    geardb_hmmanager_t* result = new geardb_hmmanager_t;
+    result->rep = new HMManager(Options().comparator, "/mnt/hm/seq");
+    return result;
+}
+
+void* geardb_hmmanager_destroy(geardb_hmmanager_t* hmmanager) {
+    delete hmmanager->rep;
+    delete hmmanager;
+}
+
+leveldb_env_t* geardb_hm_env_create(geardb_hmmanager_t* hmmanager){
+    leveldb_env_t* result = new leveldb_env_t;
+    result->rep = HMEnv::Default(hmmanager->rep);
+    result->is_default = true;
+    return result;
 }
 
 }  // end extern "C"
