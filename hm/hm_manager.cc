@@ -63,7 +63,7 @@ namespace leveldb {
         }
 
         if (bitmap_) {
-            free(bitmap_);
+            delete bitmap_;
         }
 
     }
