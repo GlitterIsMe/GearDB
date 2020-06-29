@@ -103,7 +103,7 @@ add_definitions(-DLEVELDB_PLATFORM_POSIX)
 # Must be included before CMAKE_INSTALL_INCLUDEDIR is used.
 include(GNUInstallDirs)
 
-option(METRICS_ON "turn on metrics" ON)
+option(METRICS_ON "turn on metrics" OFF)
 if(METRICS_ON)
     add_definitions(-DMETRICS_ON)
 endif(METRICS_ON)
