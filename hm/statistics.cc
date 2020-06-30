@@ -101,9 +101,7 @@ namespace leveldb {
                 break;
             case ZONE_ACCESS:
                 // arg1 = access time, arg2 = accessed zone
-            {
-                if (record_zone_access) zone_access_file << arg1 << ", " << arg2 << "\n";
-            }
+                zone_access_file << arg1 << ", " << arg2 << "\n";
                 break;
             default:
                 break;

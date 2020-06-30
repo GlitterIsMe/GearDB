@@ -29,7 +29,7 @@ namespace leveldb{
     void MyLog4(const char* format, ...);
     void MyLog5(const char* format, ...);
     void MyLog6(const char* format, ...);
-        
+    void close_log();
 
 }
 

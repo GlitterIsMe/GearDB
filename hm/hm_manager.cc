@@ -65,6 +65,7 @@ namespace leveldb {
         if (bitmap_) {
             delete bitmap_;
         }
+        close_log();
 
     }
 

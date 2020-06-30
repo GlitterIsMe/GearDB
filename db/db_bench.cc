@@ -1081,7 +1081,7 @@ int main(int argc, char** argv) {
 
   leveldb::Benchmark benchmark;
   benchmark.Run();
-  leveldb::global_metrics().Persist();
+  leveldb::global_metrics().Persist("finish-metrics.csv");
   delete leveldb::g_manager;
   return 0;
 }
