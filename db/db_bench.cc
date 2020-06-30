@@ -654,6 +654,7 @@ class Benchmark {
       while(db_->need_compaction()){
         sleep(1);
       }
+      leveldb::global_metrics().Persist("finish-load.csv");
     }
   }
 
