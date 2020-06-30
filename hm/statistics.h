@@ -38,7 +38,8 @@ namespace leveldb{
         void AddTime(TimeMetricsType metrics_type, uint64_t time);
         void AddSize(SizeMetricsType metrics_type, uint64_t size);
         void RecordFile(WriteFileMetricsType metrics_type, uint64_t arg1, uint64_t arg2);
-        void Persist();
+        void Persist(std::string filename);
+        void PrintWA();
     private:
         uint64_t delete_zone_num;
         uint64_t all_table_size;

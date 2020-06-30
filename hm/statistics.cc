@@ -35,6 +35,11 @@ namespace leveldb {
         //metrics for gc
         time_gc = 0;
         size_gc_write = 0;
+
+        std::ofstream output;
+        output.open("wa.csv", std::ios::out | std::ios::trunc);
+        output  << "total_user_write(GB), total_disk_write(GB), total_compaction_write(GB), total_gc_write(GB)\n";
+        output.close();
     }
 
     Metrics::~Metrics() {
@@ -96,16 +101,18 @@ namespace leveldb {
                 break;
             case ZONE_ACCESS:
                 // arg1 = access time, arg2 = accessed zone
-                zone_access_file << arg1 << ", " << arg2 << "\n";
+            {
+                if (record_zone_access) zone_access_file << arg1 << ", " << arg2 << "\n";
+            }
                 break;
             default:
                 break;
         }
     }
 
-    void Metrics::Persist() {
+    void Metrics::Persist(std::string filename) {
         std::ofstream output;
-        output.open("metrics.csv", std::ios::out | std::ios::trunc);
+        output.open(filename, std::ios::out | std::ios::trunc);
         output << "total_log_write_time, " << time_log_write << ",\n"
                << "total_disk_write_time, " << time_disk_write << ",\n"
                << "total_compaction_time, " << time_compaction << ",\n"
@@ -116,6 +123,16 @@ namespace leveldb {
                << "total_gc_write(GB), " << size_gc_write / 1024.0 / 1024 / 1024 << ",\n"
                << "total_locating_time, " << time_locating_sstable << ",\n"
                << "total_read_disk_time, " << time_read_disk << ",\n";
+        output.close();
+    }
+
+    void Metrics::PrintWA() {
+        std::ofstream output;
+        output.open("wa.csv", std::ios::out | std::ios::app);
+        output  << size_user_write / 1024.0 / 1024 / 1024 << ", "
+                <<  size_disk_write / 1024.0 / 1024 / 1024 << ", "
+                << size_comapction / 1024.0 / 1024 / 1024 << ", "
+                << size_gc_write / 1024.0 / 1024 / 1024 << ",\n";
         output.close();
     }
 

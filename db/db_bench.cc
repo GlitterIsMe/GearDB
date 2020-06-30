@@ -819,6 +819,7 @@ class Benchmark {
         MyLog6("%s",status.c_str());
         double log_time = db_->get_log_write_time();
         MyLog6("\nLog write time:%.2f s\n",log_time * 1e-6);
+        leveldb::global_metrics().PrintWA();
       }
     }
     g_manager->get_all_info();
