@@ -613,6 +613,7 @@ geardb_hmmanager_t* geardb_hmmanager_create() {
 void* geardb_hmmanager_destroy(geardb_hmmanager_t* hmmanager) {
     delete hmmanager->rep;
     delete hmmanager;
+    return nullptr;
 }
 
 leveldb_env_t* geardb_hm_env_create(geardb_hmmanager_t* hmmanager){

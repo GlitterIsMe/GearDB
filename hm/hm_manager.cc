@@ -219,10 +219,10 @@ namespace leveldb {
         read_time += (read_time_end - read_time_begin);
         kv_read_sector += read_size;
 #ifdef METRICS_ON
-        if(type = GET_READ){
+        /*if(type = GET_READ){
             global_metrics().AddTime(READ_DISK, read_time_end - read_time_begin);
             global_metrics().RecordFile(ZONE_ACCESS, read_time_begin, zf->zone());
-        }
+        }*/
 #endif
         return count;
     }
