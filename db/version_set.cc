@@ -430,8 +430,16 @@ Status Version::Get(const ReadOptions& options,
       saver.ucmp = ucmp;
       saver.user_key = user_key;
       saver.value = value;
+#ifdef METRICS_ON
+        auto start = std::chrono::high_resolution_clock::now();
+#endif
       s = vset_->table_cache_->Get(options, f->number, f->file_size,
                                    ikey, &saver, SaveValue);
+#ifdef METRICS_ON
+        auto end = std::chrono::high_resolution_clock::now();
+        auto micros = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        global_metrics().AddTime(READ_DISK, micros.count());
+#endif
       if (!s.ok()) {
         return s;
       }
