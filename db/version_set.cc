@@ -242,7 +242,7 @@ void Version::AddIterators(const ReadOptions& options,
   for (size_t i = 0; i < files_[0].size(); i++) {
     iters->push_back(
         vset_->table_cache_->NewIterator(
-            options, files_[0][i]->number, files_[0][i]->file_size));
+            options, files_[0][i]->number, files_[0][i]->file_size, nullptr, true));
   }
 
   // For levels > 0, we can use a concatenating iterator that sequentially
