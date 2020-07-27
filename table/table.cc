@@ -1,6 +1,7 @@
 // Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
+#include <chrono>
 
 #include "leveldb/table.h"
 
@@ -14,6 +15,8 @@
 #include "table/format.h"
 #include "table/two_level_iterator.h"
 #include "util/coding.h"
+
+#include "hm/statistics.h"
 
 namespace leveldb {
 
@@ -46,8 +49,15 @@ Status Table::Open(const Options& options,
 
   char footer_space[Footer::kEncodedLength];
   Slice footer_input;
+#ifdef METRICS_ON
+  auto start = std::chrono::high_resolution_clock::now();
+#endif
   Status s = file->Read(size - Footer::kEncodedLength, Footer::kEncodedLength,
                         &footer_input, footer_space);
+#ifdef METRICS_ON
+  auto end = std::chrono::high_resolution_clock::now();
+  global_metrics().AddTime(FOOTER_READ, std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
+#endif
   if (!s.ok()) return s;
 
   Footer footer;
@@ -61,7 +71,14 @@ Status Table::Open(const Options& options,
     if (options.paranoid_checks) {
       opt.verify_checksums = true;
     }
+#ifdef METRICS_ON
+      auto start2 = std::chrono::high_resolution_clock::now();
+#endif
     s = ReadBlock(file, opt, footer.index_handle(), &index_block_contents);
+#ifdef METRICS_ON
+      auto end2 = std::chrono::high_resolution_clock::now();
+      global_metrics().AddTime(INDEX_READ, std::chrono::duration_cast<std::chrono::microseconds>(end2 - start2).count());
+#endif
   }
 
   if (s.ok()) {
@@ -233,7 +250,14 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& k,
         !filter->KeyMayMatch(handle.offset(), k)) {
       // Not found
     } else {
+#ifdef METRICS_ON
+        auto start = std::chrono::high_resolution_clock::now();
+#endif
       Iterator* block_iter = BlockReader(this, options, iiter->value());
+#ifdef METRICS_ON
+        auto end = std::chrono::high_resolution_clock::now();
+        global_metrics().AddTime(BLOCK_READ, std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
+#endif
       block_iter->Seek(k);
       if (block_iter->Valid()) {
         (*saver)(arg, block_iter->key(), block_iter->value());

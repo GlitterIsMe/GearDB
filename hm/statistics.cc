@@ -67,6 +67,21 @@ namespace leveldb {
             case READ_DISK:
                 time_read_disk += time;
                 break;
+            case INDEX_READ:
+                time_index_read += time;
+                break;
+            case FOOTER_READ:
+                time_footer_read += time;
+                break;
+            case SUCCESS_READ:
+                time_success_read += time;
+                break;
+            case FAILURE_READ:
+                time_failure_read += time;
+                break;
+            case BLOCK_READ:
+                time_block_read += time;
+                break;
             default:
                 break;
 
@@ -120,7 +135,12 @@ namespace leveldb {
                << "total_compaction_write(GB), " << size_comapction / 1024.0 / 1024 / 1024 << ",\n"
                << "total_gc_write(GB), " << size_gc_write / 1024.0 / 1024 / 1024 << ",\n"
                << "total_locating_time, " << time_locating_sstable << ",\n"
-               << "total_read_disk_time, " << time_read_disk << ",\n";
+               << "total_read_disk_time, " << time_read_disk << ",\n"
+               << "total_read_footer_time, " << time_footer_read << ",\n"
+               << "total_read_index_time, " << time_index_read << ",\n"
+               << "total_block_index_time, " << time_block_read << ",\n"
+               << "total_success_read_block_time, " << time_success_read << ",\n"
+               << "total_failure_read_block_time, " << time_failure_read << ",\n";
         output.close();
     }
 

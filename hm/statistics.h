@@ -16,6 +16,11 @@ namespace leveldb{
         COMPACTION,
         LOCATING,
         READ_DISK,
+        INDEX_READ,
+        FOOTER_READ,
+        BLOCK_READ,
+        SUCCESS_READ,
+        FAILURE_READ,
     };
 
     enum SizeMetricsType{
@@ -65,6 +70,11 @@ namespace leveldb{
         uint64_t time_locating_sstable;
         uint64_t time_read_disk;
         std::ofstream zone_access_file;
+        uint64_t time_index_read;
+        uint64_t time_block_read;
+        uint64_t time_success_read;
+        uint64_t time_failure_read;
+        uint64_t time_footer_read;
 
         // metrics for gc
         uint64_t time_gc;

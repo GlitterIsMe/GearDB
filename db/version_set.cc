@@ -438,7 +438,8 @@ Status Version::Get(const ReadOptions& options,
 #ifdef METRICS_ON
         auto end = std::chrono::high_resolution_clock::now();
         auto micros = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        global_metrics().AddTime(READ_DISK, micros.count());
+        if (saver.state == kNotFound) global_metrics().AddTime(FAILURE_READ, micros.count());
+        if (saver.state == kFound) global_metrics().AddTime(SUCCESS_READ, micros.count());
 #endif
       if (!s.ok()) {
         return s;
