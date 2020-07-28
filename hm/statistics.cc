@@ -158,9 +158,9 @@ namespace leveldb {
         output.close();
     }
 
-    void Metrics::RecordRange(bool record, std::string smallest, std::string largest) {
+    void Metrics::RecordRange(bool record, uint64_t level, std::string smallest, std::string largest) {
         if (record) {
-            range_record << smallest << ", " << largest << "\n";
+            range_record << level << ", " << smallest << ", " << largest << "\n";
         } else {
             range_record << "\n";
         }

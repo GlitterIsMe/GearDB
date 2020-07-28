@@ -965,7 +965,7 @@ Status DBImpl::FinishCompactionOutputFile(CompactionState* compact,
           compact->current_output()->smallest.user_key().ToString().c_str(),
           compact->current_output()->largest.user_key().ToString().c_str());
     }
-    global_metrics().RecordRange(true,
+    global_metrics().RecordRange(true,compact->current_output()->level,
                                  compact->current_output()->smallest.user_key().ToString(),
                                  compact->current_output()->largest.user_key().ToString());
   }
