@@ -45,6 +45,7 @@ namespace leveldb{
         void RecordFile(WriteFileMetricsType metrics_type, uint64_t arg1, uint64_t arg2);
         void Persist(std::string filename);
         void PrintWA();
+        void RecordRange(bool record, std::string smallest, std::string largest);
     private:
         uint64_t delete_zone_num;
         uint64_t all_table_size;
@@ -79,6 +80,9 @@ namespace leveldb{
         // metrics for gc
         uint64_t time_gc;
         uint64_t size_gc_write;
+
+        //
+        std::ofstream range_record;
 
     };
 

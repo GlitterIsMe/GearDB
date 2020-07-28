@@ -40,11 +40,15 @@ namespace leveldb {
         output.open("wa.csv", std::ios::out | std::ios::trunc);
         output  << "total_user_write(GB), total_disk_write(GB), total_compaction_write(GB), total_gc_write(GB)\n";
         output.close();
+
+        range_record.open("record_range.csv", std::ios::out | std::ios::trunc);
+
     }
 
     Metrics::~Metrics() {
         per_compaction_io.close();
         zone_access_file.close();
+        range_record.close();
     }
 
     void Metrics::AddTime(leveldb::TimeMetricsType metrics_type, uint64_t time) {
@@ -152,6 +156,14 @@ namespace leveldb {
                 << size_comapction / 1024.0 / 1024 / 1024 << ", "
                 << size_gc_write / 1024.0 / 1024 / 1024 << ",\n";
         output.close();
+    }
+
+    void Metrics::RecordRange(bool record, std::string smallest, std::string largest) {
+        if (record) {
+            range_record << smallest << ", " << largest << "\n";
+        } else {
+            range_record << "\n";
+        }
     }
 
     Metrics &global_metrics() {
