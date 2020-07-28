@@ -740,7 +740,7 @@ void DBImpl::BackgroundCall() {
 
   bg_compaction_scheduled_ = false;
 
-  global_metrics().RecordRange(false, 0, " ", " ");
+  //global_metrics().RecordRange(false, 0, " ", " ");
 
   // Previous compaction may have produced too many files in a level,
   // so reschedule another compaction if needed.
@@ -965,9 +965,9 @@ Status DBImpl::FinishCompactionOutputFile(CompactionState* compact,
           compact->current_output()->smallest.user_key().ToString().c_str(),
           compact->current_output()->largest.user_key().ToString().c_str());
     }
-    global_metrics().RecordRange(true,compact->current_output()->level,
+    /*global_metrics().RecordRange(true,compact->current_output()->level,
                                  compact->current_output()->smallest.user_key().ToString(),
-                                 compact->current_output()->largest.user_key().ToString());
+                                 compact->current_output()->largest.user_key().ToString());*/
   }
   delete compact->outfile;
   compact->outfile = NULL;
