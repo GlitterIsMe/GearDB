@@ -740,7 +740,7 @@ void DBImpl::BackgroundCall() {
 
   bg_compaction_scheduled_ = false;
 
-  global_metrics().RecordRange(false, " ", " ");
+  global_metrics().RecordRange(false, 0, " ", " ");
 
   // Previous compaction may have produced too many files in a level,
   // so reschedule another compaction if needed.
