@@ -910,7 +910,7 @@ Status DBImpl::OpenCompactionOutputFile(CompactionState* compact) {
   std::string fname = TableFileName(dbname_, file_number);
   Status s = env_->NewWritableFile(fname, &(compact->outfile), compact->compaction->current_level + compact->compaction->dump_grandparents);
   if (s.ok()) {
-    compact->builder = new TableBuilder(options_, compact->outfile);
+    compact->builder = new TableBuilder(options_, compact->outfile, file_number);
   }
   return s;
 }
@@ -986,7 +986,11 @@ Status DBImpl::InstallCompactionResults(CompactionState* compact) {
       static_cast<long long>(compact->total_bytes));
 
   // Add compaction outputs
-  compact->compaction->AddInputDeletions(compact->compaction->edit());
+#ifdef META_CACHE
+    compact->compaction->AddInputDeletions(compact->compaction->edit(), options_.meta_cache);
+#else
+    compact->compaction->AddInputDeletions(compact->compaction->edit(), nullptr);
+#endif
   for (size_t i = 0; i < compact->outputs.size(); i++) {
     const CompactionState::Output& out = compact->outputs[i];
     compact->compaction->edit()->AddFile(

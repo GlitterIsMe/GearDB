@@ -19,6 +19,7 @@ namespace leveldb{
         INDEX_READ,
         FOOTER_READ,
         BLOCK_READ,
+        FILTER_READ,
         SUCCESS_READ,
         FAILURE_READ,
     };
@@ -46,6 +47,7 @@ namespace leveldb{
         void Persist(std::string filename);
         void PrintWA();
         void RecordRange(bool record, uint64_t level, std::string smallest, std::string largest);
+        void PrintMetaCacheUsage(uint64_t usage);
     private:
         uint64_t delete_zone_num;
         uint64_t all_table_size;
@@ -76,6 +78,7 @@ namespace leveldb{
         uint64_t time_success_read;
         uint64_t time_failure_read;
         uint64_t time_footer_read;
+        uint64_t time_filter_read;
 
         // metrics for gc
         uint64_t time_gc;

@@ -18,6 +18,7 @@
 #include "util/coding.h"
 #include "util/logging.h"
 
+#include "hm/meta_cache.h"
 #ifdef METRICS_ON
 #include <chrono>
 #include "hm/statistics.h"
@@ -1566,14 +1567,20 @@ bool Compaction::IsTrivialMove() const {
               MaxGrandParentOverlapBytes(vset->options_));
 }
 
-void Compaction::AddInputDeletions(VersionEdit* edit) {
+void Compaction::AddInputDeletions(VersionEdit* edit, MetaCache* meta_cache) {
   for (int which = 0; which < 2; which++) {
     for (size_t i = 0; i < inputs_[which].size(); i++) {
       edit->DeleteFile(level_ + which, inputs_[which][i]->number);
+#ifdef META_CACHE
+      if (meta_cache != nullptr) meta_cache->Evict(inputs_[which][i]->number);
+#endif
     }
   }
   for(int i=0;i<merge_delete_file.size();i++){
     edit->DeleteFile(merge_delete_file[i]->level, merge_delete_file[i]->file);
+#ifdef META_CACHE
+      if (meta_cache != nullptr) meta_cache->Evict(merge_delete_file[i]->file);
+#endif
   }
 
 }

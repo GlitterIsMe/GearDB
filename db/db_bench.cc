@@ -20,6 +20,7 @@
 #include "util/testutil.h"
 
 #include "hm/statistics.h"
+#include "hm/meta_cache.h"
 
 #define SLEEP_WAIT_FILL 1  //means waiting for compaction after fillrandom to balance the data of each level;
                           //0 means not waiting
@@ -352,6 +353,7 @@ class Benchmark {
   WriteOptions write_options_;
   int reads_;
   int heap_counter_;
+  MetaCache* meta_cache_;
 
   void PrintHeader() {
     const int kKeySize = 16;
@@ -439,7 +441,8 @@ class Benchmark {
     value_size_(FLAGS_value_size),
     entries_per_batch_(1),
     reads_(FLAGS_reads < 0 ? FLAGS_num : FLAGS_reads),
-    heap_counter_(0){
+    heap_counter_(0),
+    meta_cache_(new MetaCache()){
     std::vector<std::string> files;
     g_env->GetChildren(FLAGS_db, &files);
     for (size_t i = 0; i < files.size(); i++) {
@@ -456,6 +459,7 @@ class Benchmark {
     delete db_;
     delete cache_;
     delete filter_policy_;
+    delete meta_cache_;
   }
 
   void Run() {
@@ -573,6 +577,7 @@ class Benchmark {
         RunBenchmark(num_threads, name, method);
       }
     }
+    leveldb::global_metrics().PrintMetaCacheUsage(meta_cache_->ApproximateMemoryUsage());
   }
 
  private:
@@ -753,6 +758,7 @@ class Benchmark {
     options.filter_policy = filter_policy_;
     options.reuse_logs = FLAGS_reuse_logs;
     options.hm_manager = g_manager;
+    options.meta_cache = meta_cache_;
     Status s = DB::Open(options, FLAGS_db, &db_);
     if (!s.ok()) {
       fprintf(stderr, "open error: %s\n", s.ToString().c_str());

@@ -15,6 +15,10 @@
 #include "util/coding.h"
 #include "util/crc32c.h"
 
+#ifdef META_CACHE
+#include "hm/meta_cache.h"
+#endif
+
 namespace leveldb {
 
 struct TableBuilder::Rep {
@@ -44,7 +48,9 @@ struct TableBuilder::Rep {
 
   std::string compressed_output;
 
-  Rep(const Options& opt, WritableFile* f)
+  uint64_t fname;
+
+  Rep(const Options& opt, WritableFile* f, uint64_t filename)
       : options(opt),
         index_block_options(opt),
         file(f),
@@ -55,13 +61,14 @@ struct TableBuilder::Rep {
         closed(false),
         filter_block(opt.filter_policy == NULL ? NULL
                      : new FilterBlockBuilder(opt.filter_policy)),
-        pending_index_entry(false) {
+        pending_index_entry(false),
+        fname(filename){
     index_block_options.block_restart_interval = 1;
   }
 };
 
-TableBuilder::TableBuilder(const Options& options, WritableFile* file)
-    : rep_(new Rep(options, file)) {
+TableBuilder::TableBuilder(const Options& options, WritableFile* file, uint64_t filename)
+    : rep_(new Rep(options, file, filename)) {
   if (rep_->filter_block != NULL) {
     rep_->filter_block->StartBlock(0);
   }
@@ -249,6 +256,9 @@ Status TableBuilder::Finish() {
     if (r->status.ok()) {
       r->offset += footer_encoding.size();
     }
+#ifdef META_CACHE
+    r->options.meta_cache->Add(r->fname, Slice(footer_encoding));
+#endif
   }
   return r->status;
 }

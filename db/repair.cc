@@ -329,7 +329,7 @@ class Repairer {
     if (!s.ok()) {
       return;
     }
-    TableBuilder* builder = new TableBuilder(options_, file);
+    TableBuilder* builder = new TableBuilder(options_, file, next_file_number_);
 
     // Copy data.
     Iterator* iter = NewTableIterator(t.meta);

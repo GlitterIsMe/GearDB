@@ -108,6 +108,11 @@ if(METRICS_ON)
     add_definitions(-DMETRICS_ON)
 endif(METRICS_ON)
 
+option(USE_META_CACHE "use meta data cache" ON)
+if(USE_META_CACHE)
+    add_definitions(-DMETA_CACHE)
+endif(USE_META_CACHE)
+
 add_library(geardb "")
 cmake_policy(SET CMP0076 OLD)
 target_sources(geardb
@@ -199,6 +204,8 @@ target_sources(geardb
         "hm/env_hm.h"
         "hm/statistics.cc"
         "hm/statistics.h"
+        "hm/meta_cache.cc"
+        "hm/meta_cache.h"
         )
 
 #target_sources(geardb

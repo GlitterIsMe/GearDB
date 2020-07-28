@@ -77,6 +77,9 @@ namespace leveldb {
             case FOOTER_READ:
                 time_footer_read += time;
                 break;
+            case FILTER_READ:
+                time_filter_read += time;
+                break;
             case SUCCESS_READ:
                 time_success_read += time;
                 break;
@@ -142,7 +145,8 @@ namespace leveldb {
                << "total_read_disk_time, " << time_read_disk << ",\n"
                << "total_read_footer_time, " << time_footer_read << ",\n"
                << "total_read_index_time, " << time_index_read << ",\n"
-               << "total_block_index_time, " << time_block_read << ",\n"
+               << "total_block_time, " << time_block_read << ",\n"
+               << "total_filter_time, " << time_filter_read << ",\n"
                << "total_success_read_block_time, " << time_success_read << ",\n"
                << "total_failure_read_block_time, " << time_failure_read << ",\n";
         output.close();
@@ -164,6 +168,13 @@ namespace leveldb {
         } else {
             range_record << "\n";
         }
+    }
+
+    void Metrics::PrintMetaCacheUsage(uint64_t usage) {
+        std::ofstream output;
+        output.open("meta_usage.csv", std::ios::out | std::ios::trunc);
+        output << usage << ",\n";
+        output.close();
     }
 
     Metrics &global_metrics() {

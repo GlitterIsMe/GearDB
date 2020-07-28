@@ -17,6 +17,7 @@
 #include "util/coding.h"
 
 #include "hm/statistics.h"
+#include "hm/meta_cache.h"
 
 namespace leveldb {
 
@@ -40,6 +41,7 @@ struct Table::Rep {
 
 Status Table::Open(const Options& options,
                    RandomAccessFile* file,
+                   uint64_t name,
                    uint64_t size,
                    Table** table) {
   *table = NULL;
@@ -49,11 +51,25 @@ Status Table::Open(const Options& options,
 
   char footer_space[Footer::kEncodedLength];
   Slice footer_input;
+  Status s;
 #ifdef METRICS_ON
   auto start = std::chrono::high_resolution_clock::now();
 #endif
-  Status s = file->Read(size - Footer::kEncodedLength, Footer::kEncodedLength,
-                        &footer_input, footer_space);
+
+#ifdef META_CACHE
+  if (options.meta_cache != nullptr) {
+      Slice footer_data;
+      options.meta_cache->Get(name, footer_data);
+      memcpy(footer_space, footer_data.data(), footer_data.size());
+      footer_input = Slice(footer_space, footer_data.size());
+  }else{
+      s = file->Read(size - Footer::kEncodedLength, Footer::kEncodedLength,
+                            &footer_input, footer_space);
+  }
+#else
+    s = file->Read(size - Footer::kEncodedLength, Footer::kEncodedLength,
+                            &footer_input, footer_space);
+#endif
 #ifdef METRICS_ON
   auto end = std::chrono::high_resolution_clock::now();
   global_metrics().AddTime(FOOTER_READ, std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
@@ -112,10 +128,17 @@ void Table::ReadMeta(const Footer& footer) {
     opt.verify_checksums = true;
   }
   BlockContents contents;
+#ifdef METRICS_ON
+    auto start = std::chrono::high_resolution_clock::now();
+#endif
   if (!ReadBlock(rep_->file, opt, footer.metaindex_handle(), &contents).ok()) {
     // Do not propagate errors since meta info is not needed for operation
     return;
   }
+#ifdef METRICS_ON
+    auto end = std::chrono::high_resolution_clock::now();
+    global_metrics().AddTime(FILTER_READ, std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
+#endif
   Block* meta = new Block(contents);
 
   Iterator* iter = meta->NewIterator(BytewiseComparator());

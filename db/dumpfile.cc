@@ -153,7 +153,7 @@ Status DumpTable(Env* env, const std::string& fname, WritableFile* dst) {
     // comparator used in this database. However this should not cause
     // problems since we only use Table operations that do not require
     // any comparisons.  In particular, we do not call Seek or Prev.
-    s = Table::Open(Options(), file, file_size, &table);
+    s = Table::Open(Options(), file, 0, file_size, &table);
   }
   if (!s.ok()) {
     delete table;
