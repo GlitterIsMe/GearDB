@@ -38,6 +38,7 @@ namespace leveldb {
         }
         Slice evicted = cache_[fname];
         cache_.erase(fname);
+        cached_size_ -= evicted.size();
         delete[] evicted.data();
     }
 
