@@ -397,9 +397,9 @@ void leveldb_writebatch_iterate(
 leveldb_options_t* leveldb_options_create() {
     auto opt = new leveldb_options_t;
 #ifdef META_CACHE
-    opt->rep.meta_cache = new MetaCache;
+    opt->rep.meta_cache = new MetaCache();
 #endif
-  return new leveldb_options_t;
+  return opt;
 }
 
 void leveldb_options_destroy(leveldb_options_t* options) {
