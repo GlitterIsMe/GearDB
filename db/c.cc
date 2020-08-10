@@ -17,6 +17,9 @@
 #include "leveldb/write_batch.h"
 #include "hm/hm_manager.h"
 #include "hm/env_hm.h"
+#ifdef META_CACHE
+#include "hm/meta_cache.h"
+#endif
 
 using leveldb::Cache;
 using leveldb::Comparator;
@@ -44,6 +47,7 @@ using leveldb::WriteBatch;
 using leveldb::WriteOptions;
 using leveldb::HMManager;
 using hm::HMEnv;
+using leveldb::MetaCache;
 
 extern "C" {
 
@@ -391,10 +395,17 @@ void leveldb_writebatch_iterate(
 }
 
 leveldb_options_t* leveldb_options_create() {
+    auto opt = new leveldb_options_t;
+#ifdef META_CACHE
+    opt->rep.meta_cache = new MetaCache;
+#endif
   return new leveldb_options_t;
 }
 
 void leveldb_options_destroy(leveldb_options_t* options) {
+#ifdef META_CACHE
+    delete options->rep.meta_cache;
+#endif
   delete options;
 }
 
