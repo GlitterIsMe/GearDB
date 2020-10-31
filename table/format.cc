@@ -34,6 +34,7 @@ void Footer::EncodeTo(std::string* dst) const {
   metaindex_handle_.EncodeTo(dst);
   index_handle_.EncodeTo(dst);
   dst->resize(2 * BlockHandle::kMaxEncodedLength);  // Padding
+  PutFixed64(dst, data_block_offset_);
   PutFixed32(dst, static_cast<uint32_t>(kTableMagicNumber & 0xffffffffu));
   PutFixed32(dst, static_cast<uint32_t>(kTableMagicNumber >> 32));
   assert(dst->size() == original_size + kEncodedLength);
@@ -49,7 +50,9 @@ Status Footer::DecodeFrom(Slice* input) {
   if (magic != kTableMagicNumber) {
     return Status::Corruption("not an sstable (bad magic number)");
   }
-
+  // move to data_block_offset_
+  // | index_handle | meta_handle | data_block_off_ | magic_number|
+  data_block_offset_ = DecodeFixed64(input->data() + kEncodedLength - 8 - 8);
   Status result = metaindex_handle_.DecodeFrom(input);
   if (result.ok()) {
     result = index_handle_.DecodeFrom(input);
@@ -65,7 +68,7 @@ Status Footer::DecodeFrom(Slice* input) {
 Status ReadBlock(RandomAccessFile* file,
                  const ReadOptions& options,
                  const BlockHandle& handle,
-                 BlockContents* result) {
+                 BlockContents* result, uint64_t file_size, uint64_t meta_size, BLOCK_TYPE btype) {
   result->data = Slice();
   result->cachable = false;
   result->heap_allocated = false;
@@ -75,7 +78,19 @@ Status ReadBlock(RandomAccessFile* file,
   size_t n = static_cast<size_t>(handle.size());
   char* buf = new char[n + kBlockTrailerSize];
   Slice contents;
-  Status s = file->Read(handle.offset(), n + kBlockTrailerSize, &contents, buf);
+  uint64_t offset;
+  switch (btype) {
+    case DATA:
+      offset =  handle.offset() + meta_size;
+      break;
+    case META:
+      offset = file_size - handle.offset() - kBlockTrailerSize - handle.size();
+      break;
+    default:
+      return Status::Corruption("unknow block type");
+      break;
+  }
+  Status s = file->Read(offset, n + kBlockTrailerSize, &contents, buf);
   if (!s.ok()) {
     delete[] buf;
     return s;

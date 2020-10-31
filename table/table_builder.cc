@@ -44,6 +44,8 @@ struct TableBuilder::Rep {
 
   std::string compressed_output;
 
+  std::string local_data_block;
+
   Rep(const Options& opt, WritableFile* f)
       : options(opt),
         index_block_options(opt),
@@ -57,6 +59,7 @@ struct TableBuilder::Rep {
                      : new FilterBlockBuilder(opt.filter_policy)),
         pending_index_entry(false) {
     index_block_options.block_restart_interval = 1;
+    local_data_block.reserve(options.max_file_size + 1 * 1024 * 1024);
   }
 };
 
@@ -136,7 +139,7 @@ void TableBuilder::Flush() {
   }
 }
 
-void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
+void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle, data_type dtype) {
   // File format contains a sequence of blocks where each block has:
   //    block_data: uint8[n]
   //    type: uint8
@@ -167,25 +170,50 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
       break;
     }
   }
-  WriteRawBlock(block_contents, type, handle);
+  WriteRawBlock(block_contents, type, handle, dtype);
   r->compressed_output.clear();
   block->Reset();
 }
 
 void TableBuilder::WriteRawBlock(const Slice& block_contents,
                                  CompressionType type,
-                                 BlockHandle* handle) {
+                                 BlockHandle* handle, data_type dtype) {
   Rep* r = rep_;
   handle->set_offset(r->offset);
   handle->set_size(block_contents.size());
-  r->status = r->file->Append(block_contents);
+  //r->status = r->file->Append(block_contents);
+  // append data to local buffer
+  switch (dtype) {
+    case DATA_BLOCK:
+      r->local_data_block.append(block_contents.data(), block_contents.size());
+      break;
+
+    case META_BLOCK:
+      r->local_data_block.insert(0, block_contents.data(), block_contents.size());
+      break;
+    default:
+      break;
+  }
+  r->status = Status::OK();
   if (r->status.ok()) {
     char trailer[kBlockTrailerSize];
     trailer[0] = type;
     uint32_t crc = crc32c::Value(block_contents.data(), block_contents.size());
     crc = crc32c::Extend(crc, trailer, 1);  // Extend crc to cover block type
     EncodeFixed32(trailer+1, crc32c::Mask(crc));
-    r->status = r->file->Append(Slice(trailer, kBlockTrailerSize));
+    //r->status = r->file->Append(Slice(trailer, kBlockTrailerSize));
+    //r->local_data_block.append(trailer, kBlockTrailerSize);
+    switch (dtype) {
+      case DATA_BLOCK:
+        r->local_data_block.append(trailer, kBlockTrailerSize);
+        break;
+      case META_BLOCK:
+        r->local_data_block.insert(block_contents.size(), trailer, kBlockTrailerSize);
+        break;
+      default:
+        break;
+    }
+    r->status = Status::OK();
     if (r->status.ok()) {
       r->offset += block_contents.size() + kBlockTrailerSize;
     }
@@ -201,13 +229,16 @@ Status TableBuilder::Finish() {
   Flush();
   assert(!r->closed);
   r->closed = true;
+  uint64_t meta_off_start = r->offset;
 
   BlockHandle filter_block_handle, metaindex_block_handle, index_block_handle;
+
+  std::string meta_buffer;
 
   // Write filter block
   if (ok() && r->filter_block != NULL) {
     WriteRawBlock(r->filter_block->Finish(), kNoCompression,
-                  &filter_block_handle);
+                  &filter_block_handle, META_BLOCK);
   }
 
   // Write metaindex block
@@ -223,7 +254,7 @@ Status TableBuilder::Finish() {
     }
 
     // TODO(postrelease): Add stats and other meta blocks
-    WriteBlock(&meta_index_block, &metaindex_block_handle);
+    WriteBlock(&meta_index_block, &metaindex_block_handle, META_BLOCK);
   }
 
   // Write index block
@@ -235,7 +266,7 @@ Status TableBuilder::Finish() {
       r->index_block.Add(r->last_key, Slice(handle_encoding));
       r->pending_index_entry = false;
     }
-    WriteBlock(&r->index_block, &index_block_handle);
+    WriteBlock(&r->index_block, &index_block_handle, META_BLOCK);
   }
 
   // Write footer
@@ -243,6 +274,8 @@ Status TableBuilder::Finish() {
     Footer footer;
     footer.set_metaindex_handle(metaindex_block_handle);
     footer.set_index_handle(index_block_handle);
+    // set data offset(total meta data size)
+    footer.set_data_block_offset(r->offset - meta_off_start + Footer::kEncodedLength);
     std::string footer_encoding;
     footer.EncodeTo(&footer_encoding);
     r->status = r->file->Append(footer_encoding);
@@ -250,6 +283,7 @@ Status TableBuilder::Finish() {
       r->offset += footer_encoding.size();
     }
   }
+  r->status = r->file->Append(Slice(r->local_data_block.data(), r->local_data_block.size()));
   return r->status;
 }
 

@@ -76,9 +76,13 @@ class LEVELDB_EXPORT TableBuilder {
   uint64_t FileSize() const;
 
  private:
+  enum data_type{
+    DATA_BLOCK,
+    META_BLOCK,
+  };
   bool ok() const { return status().ok(); }
-  void WriteBlock(BlockBuilder* block, BlockHandle* handle);
-  void WriteRawBlock(const Slice& data, CompressionType, BlockHandle* handle);
+  void WriteBlock(BlockBuilder* block, BlockHandle* handle, data_type dtype = DATA_BLOCK);
+  void WriteRawBlock(const Slice& data, CompressionType, BlockHandle* handle, data_type dtype = DATA_BLOCK);
 
   struct Rep;
   Rep* rep_;

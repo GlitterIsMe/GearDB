@@ -36,6 +36,9 @@ struct Table::Rep {
 
   BlockHandle metaindex_handle;  // Handle to metaindex_block: saved from footer
   Block* index_block;
+
+  uint64_t file_size;
+  uint64_t meta_size;
 };
 
 Status Table::Open(const Options& options,
@@ -52,8 +55,10 @@ Status Table::Open(const Options& options,
 #ifdef METRICS_ON
   auto start = std::chrono::high_resolution_clock::now();
 #endif
-  Status s = file->Read(size - Footer::kEncodedLength, Footer::kEncodedLength,
-                        &footer_input, footer_space);
+  //Status s = file->Read(size - Footer::kEncodedLength, Footer::kEncodedLength,
+  //                      &footer_input, footer_space);
+  // footer of new table layout is located at the start of the table 
+  Status s = file->Read(0, Footer::kEncodedLength, &footer_input, footer_space);
 #ifdef METRICS_ON
   auto end = std::chrono::high_resolution_clock::now();
   global_metrics().AddTime(FOOTER_READ, std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
@@ -74,7 +79,7 @@ Status Table::Open(const Options& options,
 #ifdef METRICS_ON
       auto start2 = std::chrono::high_resolution_clock::now();
 #endif
-    s = ReadBlock(file, opt, footer.index_handle(), &index_block_contents);
+    s = ReadBlock(file, opt, footer.index_handle(), &index_block_contents, size, 0, META);
 #ifdef METRICS_ON
       auto end2 = std::chrono::high_resolution_clock::now();
       global_metrics().AddTime(INDEX_READ, std::chrono::duration_cast<std::chrono::microseconds>(end2 - start2).count());
@@ -93,6 +98,8 @@ Status Table::Open(const Options& options,
     rep->cache_id = (options.block_cache ? options.block_cache->NewId() : 0);
     rep->filter_data = NULL;
     rep->filter = NULL;
+    rep->file_size = size;
+    rep->meta_size = footer.data_block_offset();
     *table = new Table(rep);
     (*table)->ReadMeta(footer);
   }
@@ -112,7 +119,7 @@ void Table::ReadMeta(const Footer& footer) {
     opt.verify_checksums = true;
   }
   BlockContents contents;
-  if (!ReadBlock(rep_->file, opt, footer.metaindex_handle(), &contents).ok()) {
+  if (!ReadBlock(rep_->file, opt, footer.metaindex_handle(), &contents, rep_->file_size, 0, META).ok()) {
     // Do not propagate errors since meta info is not needed for operation
     return;
   }
@@ -143,7 +150,7 @@ void Table::ReadFilter(const Slice& filter_handle_value) {
     opt.verify_checksums = true;
   }
   BlockContents block;
-  if (!ReadBlock(rep_->file, opt, filter_handle, &block).ok()) {
+  if (!ReadBlock(rep_->file, opt, filter_handle, &block, rep_->file_size, 0, META).ok()) {
     return;
   }
   if (block.heap_allocated) {
@@ -198,7 +205,7 @@ Iterator* Table::BlockReader(void* arg,
       if (cache_handle != NULL) {
         block = reinterpret_cast<Block*>(block_cache->Value(cache_handle));
       } else {
-        s = ReadBlock(table->rep_->file, options, handle, &contents);
+        s = ReadBlock(table->rep_->file, options, handle, &contents, table->rep_->file_size, table->rep_->meta_size, DATA);
         if (s.ok()) {
           block = new Block(contents);
           if (contents.cachable && options.fill_cache) {
@@ -208,7 +215,7 @@ Iterator* Table::BlockReader(void* arg,
         }
       }
     } else {
-      s = ReadBlock(table->rep_->file, options, handle, &contents);
+      s = ReadBlock(table->rep_->file, options, handle, &contents, table->rep_->file_size, table->rep_->meta_size, DATA);
       if (s.ok()) {
         block = new Block(contents);
       }

@@ -17,6 +17,11 @@ class Block;
 class RandomAccessFile;
 struct ReadOptions;
 
+enum BLOCK_TYPE{
+  DATA,
+  META,
+};
+
 // BlockHandle is a pointer to the extent of a file that stores a data
 // block or a meta block.
 class BlockHandle {
@@ -60,6 +65,14 @@ class Footer {
     index_handle_ = h;
   }
 
+  void set_data_block_offset(uint64_t offset) {
+    data_block_offset_ = offset;
+  }
+
+  uint64_t data_block_offset() {
+    return data_block_offset_;
+  }
+
   void EncodeTo(std::string* dst) const;
   Status DecodeFrom(Slice* input);
 
@@ -67,12 +80,13 @@ class Footer {
   // Footer will always occupy exactly this many bytes.  It consists
   // of two block handles and a magic number.
   enum {
-    kEncodedLength = 2*BlockHandle::kMaxEncodedLength + 8
+    kEncodedLength = 2*BlockHandle::kMaxEncodedLength + 8 + 8
   };
 
  private:
   BlockHandle metaindex_handle_;
   BlockHandle index_handle_;
+  uint64_t data_block_offset_;
 };
 
 // kTableMagicNumber was picked by running
@@ -94,7 +108,7 @@ struct BlockContents {
 extern Status ReadBlock(RandomAccessFile* file,
                         const ReadOptions& options,
                         const BlockHandle& handle,
-                        BlockContents* result);
+                        BlockContents* result, uint64_t file_size, uint64_t meta_size, BLOCK_TYPE btype);
 
 // Implementation details follow.  Clients should ignore,
 
