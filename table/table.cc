@@ -61,7 +61,9 @@ Status Table::Open(const Options& options,
   Status s = file->Read(0, Footer::kEncodedLength, &footer_input, footer_space);
 #ifdef METRICS_ON
   auto end = std::chrono::high_resolution_clock::now();
-  global_metrics().AddTime(FOOTER_READ, std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
+  uint64_t consume = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+  global_metrics().AddTime(FOOTER_READ, consume);
+  //global_metrics().RecordFile(FOOTER_ACCESS, Footer::kEncodedLength, consume);
 #endif
   if (!s.ok()) return s;
 
@@ -82,7 +84,9 @@ Status Table::Open(const Options& options,
     s = ReadBlock(file, opt, footer.index_handle(), &index_block_contents, size, 0, META);
 #ifdef METRICS_ON
       auto end2 = std::chrono::high_resolution_clock::now();
-      global_metrics().AddTime(INDEX_READ, std::chrono::duration_cast<std::chrono::microseconds>(end2 - start2).count());
+      uint64_t index_time = std::chrono::duration_cast<std::chrono::microseconds>(end2 - start2).count();
+      global_metrics().AddTime(INDEX_READ, index_time);
+      //global_metrics().RecordFile(INDEX_ACCESS, footer.index_handle().size(), index_time);
 #endif
   }
 
@@ -188,7 +192,7 @@ Iterator* Table::BlockReader(void* arg,
   Block* block = NULL;
   Cache::Handle* cache_handle = NULL;
 
-  BlockHandle handle;
+  BlockHandle handle;d
   Slice input = index_value;
   Status s = handle.DecodeFrom(&input);
   // We intentionally allow extra stuff in index_value so that we

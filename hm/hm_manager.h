@@ -26,6 +26,26 @@ namespace leveldb{
         GET_READ,
     };
 
+    const bool USE_READ_AHEAD = true;
+    const uint64_t READ_AHEAD_SIZE = 256 * 1024;
+
+    struct ReadAheadData{
+        bool valid_;
+        uint64_t zone_id_;
+        uint64_t offset_;
+        uint64_t size_;
+        char* data_;
+
+        bool is_included(uint64_t zone_id, uint64_t offset, uint64_t size) {
+            if (zone_id != zone_id_) return false;
+            if (offset >= offset_ && offset + size <= offset_ + size_) return true;
+            return false;
+        }
+
+        ReadAheadData(): valid_(false), zone_id_(0), offset_(0), size_(0), data_(nullptr){}
+
+    };
+
     class HMManager {
     public:
         HMManager(const Comparator *icmp, std::string smr_disk);
@@ -74,6 +94,8 @@ namespace leveldb{
         std::string smr_filename_;
 
         const InternalKeyComparator icmp_;
+
+        ReadAheadData ahead_data_;
 
         std::map<uint64_t, Ldbfile*> table_map_;  //<file number, metadate pointer>
         std::vector<Zonefile*> zone_info_[config::kNumLevels];  //each level of zone

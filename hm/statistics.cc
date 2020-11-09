@@ -36,12 +36,19 @@ namespace leveldb {
         time_gc = 0;
         size_gc_write = 0;
 
+        //metrics for ahead cache
+        ahead_hit = 0;
+        ahead_miss = 0;
+        ahead_hit_size = 0;
+
         std::ofstream output;
         output.open("wa.csv", std::ios::out | std::ios::trunc);
         output  << "total_user_write(GB), total_disk_write(GB), total_compaction_write(GB), total_gc_write(GB)\n";
         output.close();
 
         range_record.open("record_range.csv", std::ios::out | std::ios::trunc);
+        footer_record.open("footer.csv", std::ios::out | std::ios::trunc);
+        index_record.open("index.csv", std::ios::out | std::ios::trunc);
 
     }
 
@@ -49,6 +56,8 @@ namespace leveldb {
         per_compaction_io.close();
         zone_access_file.close();
         range_record.close();
+        footer_record.close();
+        index_record.close();
     }
 
     void Metrics::AddTime(leveldb::TimeMetricsType metrics_type, uint64_t time) {
@@ -106,6 +115,15 @@ namespace leveldb {
             case COMPACTION_WRITE:
                 size_comapction += size;
                 break;
+            case AHEADE_HIT:
+                ahead_hit += 1;
+                break;
+            case AHEAD_MISS:
+                ahead_miss += 1;
+                break;
+            case AHEAD_HIT_SIZE:
+                ahead_hit_size += size;
+                break;
             default:
                 break;
 
@@ -121,6 +139,12 @@ namespace leveldb {
             case ZONE_ACCESS:
                 // arg1 = access time, arg2 = accessed zone
                 zone_access_file << arg1 << ", " << arg2 << "\n";
+                break;
+            case FOOTER_ACCESS:
+                footer_record << arg1 << ", " << arg2 << "\n";
+                break;
+            case INDEX_ACCESS:
+                index_record << arg1 << ", " << arg2 << "\n";
                 break;
             default:
                 break;
@@ -144,7 +168,10 @@ namespace leveldb {
                << "total_read_index_time, " << time_index_read << ",\n"
                << "total_block_index_time, " << time_block_read << ",\n"
                << "total_success_read_block_time, " << time_success_read << ",\n"
-               << "total_failure_read_block_time, " << time_failure_read << ",\n";
+               << "total_failure_read_block_time, " << time_failure_read << ",\n"
+               << "total_ahead_hit, " << ahead_hit << ",\n"
+               << "total_ahead_miss, " << ahead_miss << ",\n"
+               << "total_ahead_hit_size, " << ahead_hit_size / 1024.0 << ",\n";
         output.close();
     }
 

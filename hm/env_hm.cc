@@ -201,6 +201,7 @@ namespace hm {
         }
 
         virtual Status Sync() {
+            // The buf is already memaligned
             ssize_t ret = hm_manager_->hm_write(level_, Parsefname(fname_), buf_, total_size_);
             if (ret > 0) {
                 return Status::OK();

@@ -3,8 +3,11 @@
 #include <sys/time.h>
 
 #include "hm/hm_manager.h"
+
 #ifdef METRICS_ON
+
 #include "hm/statistics.h"
+
 #endif
 
 namespace leveldb {
@@ -61,10 +64,9 @@ namespace leveldb {
             }
             zone_info_[i].clear();
         }
+        delete bitmap_;
+        delete[] ahead_data_.data_;
 
-        if (bitmap_) {
-            delete bitmap_;
-        }
         close_log();
 
     }
@@ -130,7 +132,7 @@ namespace leveldb {
 
     ssize_t HMManager::hm_write(int level, uint64_t filenum, const void *buf, uint64_t count) {
         hm_alloc(level, count);
-        void *w_buf = nullptr;
+        //void *w_buf = nullptr;
         Zonefile *zf = zone_info_[level].back();
         uint64_t write_size;
         uint64_t write_ofst = zf->write_pointer();
@@ -143,15 +145,16 @@ namespace leveldb {
         } else {
             write_size = (count / PhysicalDiskSize + 1) * PhysicalDiskSize;  //Align with physical block
             //w_buf=(void *)malloc(sector_count*512);
-            ret = posix_memalign(&w_buf, MemAlignSize, write_size);
+            //ret = posix_memalign(&w_buf, MemAlignSize, write_size);
             if (ret != 0) {
                 printf("error:%ld posix_memalign falid!\n", ret);
                 return -1;
             }
-            memset(w_buf, 0, write_size);
-            memcpy(w_buf, buf, count);
-            ret = pwrite(zf->fd(), w_buf, write_size, write_ofst);
-            free(w_buf);
+            //memset(w_buf, 0, write_size);
+            //memcpy(w_buf, buf, count);
+            //ret = pwrite(zf->fd(), w_buf, write_size, write_ofst);
+            ret = pwrite(zf->fd(), buf, write_size, write_ofst);
+            //free(w_buf);
         }
         if (ret != write_size) {
             printf("error:%ld hm_write falid! table:%ld write_size:%ld\n", ret, filenum, write_size);
@@ -178,48 +181,85 @@ namespace leveldb {
 
     ssize_t HMManager::hm_read(uint64_t filenum, void *buf, uint64_t count, uint64_t offset, ReadType type) {
         void *r_buf = nullptr;
-        uint64_t read_size;
-        uint64_t read_ofst;
-        uint64_t de_ofst;
+        uint64_t read_size, read_ofst, de_ofst;
         ssize_t ret;
-        uint64_t read_time_begin = get_now_micros();
 
+        uint64_t read_time_begin = get_now_micros();
         if (table_map_.find(filenum) == table_map_.end()) {
             printf(" table_map_ can't find table:%ld!\n", filenum);
             return -1;
         }
+        uint64_t table_offset = table_map_[filenum]->offset;
         Zonefile *zf = get_zone(table_map_[filenum]->zone, table_map_[filenum]->level);
         if (zf == nullptr) {
             printf(" get_zone can't find zone:%ld level:%d! \n", table_map_[filenum]->zone, table_map_[filenum]->level);
             return -1;
         }
-        read_ofst =
-                table_map_[filenum]->offset +
-                (offset / LogicalDiskSize) * LogicalDiskSize;    //offset Align with logical block
+        // offset Align with logical block
+        read_ofst = table_offset + (offset / LogicalDiskSize) * LogicalDiskSize;
+        // actual read offset
         de_ofst = offset % LogicalDiskSize;
 
         read_size = ((count + de_ofst) % LogicalDiskSize) ? ((count + de_ofst) / LogicalDiskSize + 1) * LogicalDiskSize
                                                           : (count + de_ofst);   //size Align with logical block
 
         //r_buf=(void *)malloc(sector_count*512);
-        ret = posix_memalign(&r_buf, MemAlignSize, read_size);
-        if (ret != 0) {
-            printf("error:%ld posix_memalign falid!\n", ret);
-            return -1;
+        bool normal_read = true;
+        bool set_cache = false;
+        if (USE_READ_AHEAD) {
+            if (ahead_data_.valid_ && ahead_data_.zone_id_ == zf->zone()
+                && ahead_data_.is_included(zf->zone(), table_offset + offset, count)) {
+                // cache hit
+                memcpy(buf, ahead_data_.data_ + (table_offset + offset - ahead_data_.offset_), count);
+                normal_read = false;
+#ifdef METRICS_ON
+                global_metrics().AddSize(AHEADE_HIT, 0);
+                global_metrics().AddSize(AHEAD_HIT_SIZE, read_size);
+#endif
+            } else {
+                // cache miss and read from disk
+                if (count < READ_AHEAD_SIZE
+                    && (zf->write_pointer() - read_ofst > READ_AHEAD_SIZE)) {
+                    read_size = READ_AHEAD_SIZE;
+                    set_cache = true;
+                }
+#ifdef METRICS_ON
+                global_metrics().AddSize(AHEAD_MISS, 0);
+#endif
+            }
         }
-        memset(r_buf, 0, read_size);
-        ret = pread(zf->fd(), r_buf, read_size, read_ofst);
-        memcpy(buf, ((char *) r_buf) + de_ofst, count);
-        free(r_buf);
-        if (ret != read_size) {
-            printf("error:%ld hm_read falid!\n", ret);
-            return -1;
+        if (normal_read) {
+            // alloc read user buffer
+            ret = posix_memalign(&r_buf, MemAlignSize, read_size);
+            if (ret != 0) {
+                printf("error:%ld posix_memalign falid!\n", ret);
+                return -1;
+            }
+            memset(r_buf, 0, read_size);
+            // read from disk
+            ret = pread(zf->fd(), r_buf, read_size, read_ofst);
+            memcpy(buf, ((char *) r_buf) + de_ofst, count);
+            if (ret != read_size) {
+                printf("error:%ld hm_read falid!\n", ret);
+                return -1;
+            }
+            if (USE_READ_AHEAD && set_cache) {
+                /// TODO: don't cache data large than 256K
+                ahead_data_.zone_id_ = zf->zone();
+                ahead_data_.size_ = read_size;
+                ahead_data_.offset_ = read_ofst;
+                delete[] ahead_data_.data_;
+                ahead_data_.data_ = static_cast<char *>(r_buf);
+                ahead_data_.valid_ = true;
+            } else {
+                free(r_buf);
+            }
+            kv_read_sector += read_size;
         }
-
         uint64_t read_time_end = get_now_micros();
         read_time += (read_time_end - read_time_begin);
-        kv_read_sector += read_size;
 #ifdef METRICS_ON
+        //global_metrics().RecordFile(ZONE_ACCESS, ret, (read_time_end - read_time_begin));
         /*if(type = GET_READ){
             global_metrics().AddTime(READ_DISK, read_time_end - read_time_begin);
             global_metrics().RecordFile(ZONE_ACCESS, read_time_begin, zf->zone());

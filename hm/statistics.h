@@ -28,12 +28,16 @@ namespace leveldb{
         USER_WRITE,
         GC_WRITE,
         COMPACTION_WRITE,
-
+        AHEADE_HIT,
+        AHEAD_MISS,
+        AHEAD_HIT_SIZE,
     };
 
     enum WriteFileMetricsType{
         PER_COMPACTION,
         ZONE_ACCESS,
+        FOOTER_ACCESS,
+        INDEX_ACCESS,
     };
 
     class Metrics{
@@ -81,8 +85,13 @@ namespace leveldb{
         uint64_t time_gc;
         uint64_t size_gc_write;
 
+        // metrics for ahead cache
+        uint64_t ahead_hit;
+        uint64_t ahead_miss;
+        uint64_t ahead_hit_size;
+
         //
-        std::ofstream range_record;
+        std::ofstream range_record, footer_record, index_record;
 
     };
 
