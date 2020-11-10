@@ -192,7 +192,7 @@ Iterator* Table::BlockReader(void* arg,
   Block* block = NULL;
   Cache::Handle* cache_handle = NULL;
 
-  BlockHandle handle;d
+  BlockHandle handle;
   Slice input = index_value;
   Status s = handle.DecodeFrom(&input);
   // We intentionally allow extra stuff in index_value so that we
@@ -209,7 +209,16 @@ Iterator* Table::BlockReader(void* arg,
       if (cache_handle != NULL) {
         block = reinterpret_cast<Block*>(block_cache->Value(cache_handle));
       } else {
+#ifdef METRICS_ON
+          auto start1 = std::chrono::high_resolution_clock::now();
+#endif
         s = ReadBlock(table->rep_->file, options, handle, &contents, table->rep_->file_size, table->rep_->meta_size, DATA);
+#ifdef METRICS_ON
+          auto end1 = std::chrono::high_resolution_clock::now();
+          uint64_t block_time = std::chrono::duration_cast<std::chrono::microseconds>(end1 - start1).count();
+          global_metrics().AddTime(BLOCK_READ, block_time);
+          //global_metrics().RecordFile(INDEX_ACCESS, footer.index_handle().size(), index_time);
+#endif
         if (s.ok()) {
           block = new Block(contents);
           if (contents.cachable && options.fill_cache) {
@@ -219,7 +228,16 @@ Iterator* Table::BlockReader(void* arg,
         }
       }
     } else {
+#ifdef METRICS_ON
+        auto start1 = std::chrono::high_resolution_clock::now();
+#endif
       s = ReadBlock(table->rep_->file, options, handle, &contents, table->rep_->file_size, table->rep_->meta_size, DATA);
+#ifdef METRICS_ON
+        auto end1 = std::chrono::high_resolution_clock::now();
+        uint64_t block_time = std::chrono::duration_cast<std::chrono::microseconds>(end1 - start1).count();
+        global_metrics().AddTime(BLOCK_READ, block_time);
+        //global_metrics().RecordFile(INDEX_ACCESS, footer.index_handle().size(), index_time);
+#endif
       if (s.ok()) {
         block = new Block(contents);
       }
@@ -261,14 +279,14 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& k,
         !filter->KeyMayMatch(handle.offset(), k)) {
       // Not found
     } else {
-#ifdef METRICS_ON
+/*#ifdef METRICS_ON
         auto start = std::chrono::high_resolution_clock::now();
-#endif
+#endif*/
       Iterator* block_iter = BlockReader(this, options, iiter->value());
-#ifdef METRICS_ON
+/*#ifdef METRICS_ON
         auto end = std::chrono::high_resolution_clock::now();
         global_metrics().AddTime(BLOCK_READ, std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
-#endif
+#endif*/
       block_iter->Seek(k);
       if (block_iter->Valid()) {
         (*saver)(arg, block_iter->key(), block_iter->value());

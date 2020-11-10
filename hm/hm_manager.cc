@@ -83,8 +83,8 @@ namespace leveldb {
             if (bitmap_->get(i) == 0) {
                 char filenamebuf[100];
                 snprintf(filenamebuf, sizeof(filenamebuf), "%s/%d", smr_filename_.c_str(), i);
-                //int fd = open(filenamebuf, O_CREAT | O_RDWR | O_TRUNC, 0666);
-                int fd = open(filenamebuf, O_RDWR | O_DIRECT | O_TRUNC);  //need O_TRUNC to set write_pointer = 0
+                int fd = open(filenamebuf, O_CREAT | O_RDWR | O_TRUNC, 0666);
+                //int fd = open(filenamebuf, O_RDWR | O_DIRECT | O_TRUNC);  //need O_TRUNC to set write_pointer = 0
                 if (fd == -1) {
                     MyLog("error:open failed! path:%s\n", filenamebuf);
                     continue;
@@ -146,10 +146,10 @@ namespace leveldb {
             write_size = (count / PhysicalDiskSize + 1) * PhysicalDiskSize;  //Align with physical block
             //w_buf=(void *)malloc(sector_count*512);
             //ret = posix_memalign(&w_buf, MemAlignSize, write_size);
-            if (ret != 0) {
-                printf("error:%ld posix_memalign falid!\n", ret);
-                return -1;
-            }
+            //if (ret != 0) {
+            //    printf("error:%ld posix_memalign falid!\n", ret);
+            //    return -1;
+            //}
             //memset(w_buf, 0, write_size);
             //memcpy(w_buf, buf, count);
             //ret = pwrite(zf->fd(), w_buf, write_size, write_ofst);
