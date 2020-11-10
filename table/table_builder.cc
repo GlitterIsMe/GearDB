@@ -202,7 +202,6 @@ void TableBuilder::WriteRawBlock(const Slice& block_contents,
     crc = crc32c::Extend(crc, trailer, 1);  // Extend crc to cover block type
     EncodeFixed32(trailer+1, crc32c::Mask(crc));
     //r->status = r->file->Append(Slice(trailer, kBlockTrailerSize));
-    //r->local_data_block.append(trailer, kBlockTrailerSize);
     switch (dtype) {
       case DATA_BLOCK:
         r->local_data_block.append(trailer, kBlockTrailerSize);

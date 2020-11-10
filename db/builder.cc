@@ -50,21 +50,21 @@ Status BuildTable(const std::string& dbname,
     delete builder;
 
     // Finish and check for file errors
-    if (s.ok()) {
+    /*if (s.ok()) {
       s = file->Sync();
     }
     if (s.ok()) {
       s = file->Close();
-    }
+    }*/
 
-    if (s.ok()) {
+    /*if (s.ok()) {
       // Verify that the table is usable
       Iterator* it = table_cache->NewIterator(ReadOptions(),
                                               meta->number,
                                               meta->file_size);
       s = it->status();
       delete it;
-    }
+    }*/
   }
 
   // Check for input iterator errors
